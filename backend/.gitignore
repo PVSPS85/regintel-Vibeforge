@@ -1,1 +1,13 @@
+# Environments
+venv/
+env/
+.env
 
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
