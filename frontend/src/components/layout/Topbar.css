@@ -1,0 +1,407 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Topbar – RegIntel
+   Shares the design tokens declared in Sidebar.css via :root.
+   All tokens are prefixed so they don't clash with sidebar vars.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Additional tokens ──────────────────────────────────────────────────── */
+:root {
+  --topbar-height:    60px;
+  --topbar-bg:        #ffffff;
+  --topbar-border:    #e5e7eb;
+  --topbar-shadow:    0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --input-bg:         #f9fafb;
+  --input-border:     #e5e7eb;
+  --input-focus-ring: rgba(37, 99, 235, 0.25);
+
+  --badge-bg:         #ef4444;   /* red-500  */
+  --badge-text:       #ffffff;
+
+  --profile-avatar-bg: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+
+  --dropdown-shadow:  0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+
+  --danger-text:      #dc2626;   /* red-600  */
+  --danger-hover-bg:  #fef2f2;   /* red-50   */
+
+  --transition-fast: 140ms ease; /* already declared in Sidebar.css – safe to repeat */
+}
+
+/* ─── Shell ──────────────────────────────────────────────────────────────── */
+
+.topbar {
+  height: var(--topbar-height);
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
+  box-shadow: var(--topbar-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+/* ─── Left group ─────────────────────────────────────────────────────────── */
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  flex: 1;
+}
+
+.topbar__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading, #111827);
+  letter-spacing: -0.3px;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Search ── */
+
+.topbar__search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 320px;
+  width: 100%;
+}
+
+.topbar__search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted, #9ca3af);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.topbar__search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 34px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-body, #374151);
+  outline: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+
+  /* reset browser default search-cancel button styling */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.topbar__search-input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
+.topbar__search-input:focus {
+  background: #fff;
+  border-color: var(--brand-primary, #2563eb);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
+}
+
+/* ─── Right group ────────────────────────────────────────────────────────── */
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.topbar__divider {
+  width: 1px;
+  height: 28px;
+  background: var(--topbar-border);
+  margin: 0 4px;
+}
+
+/* ─── Generic icon button ────────────────────────────────────────────────── */
+
+.tb-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-caption, #6b7280);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.tb-icon-btn:hover {
+  background: var(--nav-hover-bg, #f3f4f6);
+  color: var(--text-heading, #111827);
+}
+
+/* ─── Shared dropdown container ──────────────────────────────────────────── */
+
+.tb-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 172px;
+  background: #fff;
+  border: 1px solid var(--topbar-border);
+  border-radius: 10px;
+  box-shadow: var(--dropdown-shadow);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  z-index: 200;
+  animation: tb-fade-in 120ms ease;
+}
+
+@keyframes tb-fade-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.tb-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-body, #374151);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.tb-dropdown__item:hover,
+.tb-dropdown__item:focus-visible {
+  background: var(--nav-hover-bg, #f3f4f6);
+  color: var(--text-heading, #111827);
+  outline: none;
+}
+
+.tb-dropdown__item--selected {
+  background: var(--brand-primary-soft, #eff6ff);
+  color: var(--brand-primary, #2563eb);
+  font-weight: 600;
+}
+
+.tb-dropdown__item--danger {
+  color: var(--danger-text);
+}
+.tb-dropdown__item--danger:hover,
+.tb-dropdown__item--danger:focus-visible {
+  background: var(--danger-hover-bg);
+  color: var(--danger-text);
+}
+
+.tb-dropdown__sep {
+  height: 1px;
+  background: var(--topbar-border);
+  margin: 4px 0;
+  pointer-events: none;
+}
+
+.tb-dropdown__header {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 6px;
+  pointer-events: none;
+}
+
+.tb-dropdown__user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading, #111827);
+}
+
+.tb-dropdown__user-role {
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 1px;
+}
+
+/* ─── Language picker ────────────────────────────────────────────────────── */
+
+.tb-lang {
+  position: relative;
+}
+
+.tb-lang__trigger {
+  /* inherits .tb-icon-btn */
+}
+
+.tb-lang__code {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.tb-lang__chevron {
+  color: var(--text-muted, #9ca3af);
+  transition: transform var(--transition-fast);
+}
+
+.tb-lang__chevron--open {
+  transform: rotate(180deg);
+}
+
+.tb-lang__menu {
+  min-width: 140px;
+}
+
+/* ─── Notification bell ──────────────────────────────────────────────────── */
+
+.tb-notif-btn {
+  position: relative;
+  /* inherits .tb-icon-btn */
+}
+
+.tb-notif-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  /* pop-in animation */
+  animation: tb-badge-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tb-badge-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ─── Profile menu ───────────────────────────────────────────────────────── */
+
+.tb-profile {
+  position: relative;
+}
+
+.tb-profile__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid var(--topbar-border);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.tb-profile__trigger:hover {
+  background: var(--nav-hover-bg, #f3f4f6);
+  border-color: #d1d5db;
+}
+
+.tb-profile__trigger:focus-visible {
+  outline: 2px solid var(--brand-primary, #2563eb);
+  outline-offset: 2px;
+}
+
+.tb-profile__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--profile-avatar-bg);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
+}
+
+.tb-profile__meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+}
+
+.tb-profile__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-heading, #111827);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  line-height: 1.2;
+}
+
+.tb-profile__branch {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted, #9ca3af);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
+.tb-profile__chevron {
+  color: var(--text-muted, #9ca3af);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.tb-profile__chevron--open {
+  transform: rotate(180deg);
+}
+
+.tb-profile__menu {
+  min-width: 200px;
+  right: 0;
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar__search-input,
+  .tb-icon-btn,
+  .tb-lang__chevron,
+  .tb-profile__trigger,
+  .tb-profile__chevron {
+    transition: none;
+  }
+  .tb-dropdown {
+    animation: none;
+  }
+  .tb-notif-badge {
+    animation: none;
+  }
+}
