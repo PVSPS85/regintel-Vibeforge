@@ -94,11 +94,11 @@ const getCategoryStyles = (category: string) => {
     case 'KYC / Onboarding':
       return 'bg-rose-50 text-rose-700 ring-rose-600/10';
     case 'IT Security':
-      return 'bg-indigo-50 text-indigo-700 ring-indigo-600/10';
+      return 'bg-[#f3f3f5] text-[#030213] ring-[#030213]/10';
     case 'Audit Prep':
       return 'bg-amber-50 text-amber-700 ring-amber-600/10';
     default:
-      return 'bg-gray-50 text-gray-700 ring-gray-600/10';
+      return 'bg-[#f3f3f5] text-gray-700 ring-gray-600/10';
   }
 };
 
@@ -210,7 +210,7 @@ const Discussions = () => {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 bg-[#030213] text-white hover:bg-opacity-95 active:scale-98 transition-all px-4 h-10 rounded-lg text-[13px] font-semibold cursor-pointer shadow-sm self-start sm:self-center"
+          className="inline-flex items-center gap-2 bg-[#030213] text-white hover:bg-opacity-95 active:scale-98 transition-all px-4 h-10 rounded-md text-[13px] font-semibold cursor-pointer shadow-sm self-start sm:self-center"
         >
           <Plus size={16} />
           New Discussion
@@ -218,7 +218,7 @@ const Discussions = () => {
       </div>
 
       {/* ── Search & Filter Pill Options ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm">
         <div className="relative w-full md:max-w-md">
           <Search
             size={16}
@@ -229,7 +229,7 @@ const Discussions = () => {
             placeholder="Search discussion threads by title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 bg-gray-50 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-md border border-[rgba(0,0,0,0.1)] bg-[#f3f3f5] text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all"
           />
         </div>
 
@@ -238,10 +238,10 @@ const Discussions = () => {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer ${
                 selectedCategory === cat
                   ? 'bg-[#030213] text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-[rgba(0,0,0,0.1)]'
               }`}
             >
               {cat}
@@ -251,13 +251,13 @@ const Discussions = () => {
       </div>
 
       {/* ── Thread List ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
+      <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm divide-y divide-gray-100 overflow-hidden">
         {filteredThreads.length > 0 ? (
           filteredThreads.map((thread) => (
             <div
               key={thread.id}
               onClick={() => setSelectedThread(thread)}
-              className="p-5 hover:bg-gray-50/50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+              className="p-5 hover:bg-[#f3f3f5]/50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
             >
               <div className="space-y-2 flex-1">
                 {/* Title & Category Badge */}
@@ -265,12 +265,12 @@ const Discussions = () => {
                   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${getCategoryStyles(thread.category)}`}>
                     {thread.category}
                   </span>
-                  <span className="text-[11px] font-mono font-medium text-gray-400 bg-gray-100 px-1 rounded border border-gray-200/20">
+                  <span className="text-[11px] font-mono font-medium text-gray-400 bg-gray-100 px-1 rounded border border-[rgba(0,0,0,0.1)]/20">
                     {thread.id}
                   </span>
                 </div>
 
-                <h3 className="text-[15px] font-bold text-gray-900 group-hover:text-indigo-600 transition-colors pr-6">
+                <h3 className="text-[15px] font-bold text-gray-900 group-hover:text-[#030213] transition-colors pr-6">
                   {thread.title}
                 </h3>
 
@@ -292,7 +292,7 @@ const Discussions = () => {
 
               {/* Comment Count Badge */}
               <div className="shrink-0 flex items-center justify-end">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-[12px] font-bold text-gray-600 group-hover:bg-indigo-50 group-hover:border-indigo-100 group-hover:text-indigo-600 transition-colors">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f3f3f5] border border-[rgba(0,0,0,0.1)] text-[12px] font-bold text-gray-600 group-hover:bg-[#f3f3f5] group-hover:border-[rgba(0,0,0,0.1)] group-hover:text-[#030213] transition-colors">
                   <MessageSquare size={13} className="text-gray-400 group-hover:text-indigo-400" />
                   {thread.commentsCount} Comments
                 </span>
@@ -317,10 +317,10 @@ const Discussions = () => {
             />
 
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-xl transition-all duration-300 ease-in-out border-l border-gray-200">
+              <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-xl transition-all duration-300 ease-in-out border-l border-[rgba(0,0,0,0.1)]">
                 <div className="flex h-full flex-col bg-white">
                   {/* Drawer Header */}
-                  <div className="bg-gray-50 border-b border-gray-200 px-6 py-5">
+                  <div className="bg-[#f3f3f5] border-b border-[rgba(0,0,0,0.1)] px-6 py-5">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -341,7 +341,7 @@ const Discussions = () => {
                       </div>
                       <button
                         onClick={() => setSelectedThread(null)}
-                        className="rounded-md bg-white text-gray-400 hover:text-gray-500 outline-none p-1.5 border border-gray-200 hover:border-gray-300 transition-all cursor-pointer"
+                        className="rounded-md bg-white text-gray-400 hover:text-gray-500 outline-none p-1.5 border border-[rgba(0,0,0,0.1)] hover:border-gray-300 transition-all cursor-pointer"
                       >
                         <X size={18} />
                       </button>
@@ -351,7 +351,7 @@ const Discussions = () => {
                   {/* Drawer Body - Scrollable */}
                   <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
                     {/* Thread Topic Content */}
-                    <div className="bg-gray-50/40 rounded-xl p-4.5 border border-gray-200/60 text-[13.5px] text-gray-700 leading-relaxed">
+                    <div className="bg-[#f3f3f5]/40 rounded-md p-4.5 border border-[rgba(0,0,0,0.1)]/60 text-[13.5px] text-gray-700 leading-relaxed">
                       {selectedThread.content}
                     </div>
 
@@ -366,11 +366,11 @@ const Discussions = () => {
                           selectedThread.comments.map((comment, index) => (
                             <div key={index} className="flex gap-3">
                               {/* Circle avatar */}
-                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 border border-gray-200/60 font-bold text-[11px] text-gray-600">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 border border-[rgba(0,0,0,0.1)]/60 font-bold text-[11px] text-gray-600">
                                 {comment.author.substring(0, 2).toUpperCase()}
                               </div>
 
-                              <div className="bg-gray-50/50 border border-gray-200/50 rounded-xl p-3 flex-1 space-y-1">
+                              <div className="bg-[#f3f3f5]/50 border border-[rgba(0,0,0,0.1)]/50 rounded-md p-3 flex-1 space-y-1">
                                 <div className="flex items-center justify-between text-[11px] font-medium">
                                   <div>
                                     <span className="text-gray-800 font-bold">{comment.author}</span>
@@ -392,19 +392,19 @@ const Discussions = () => {
                   </div>
 
                   {/* Drawer Footer Comment Post Input */}
-                  <div className="border-t border-gray-200 p-4 bg-gray-50">
+                  <div className="border-t border-[rgba(0,0,0,0.1)] p-4 bg-[#f3f3f5]">
                     <form onSubmit={handlePostComment} className="flex items-center gap-2">
                       <input
                         type="text"
                         placeholder="Write a reply..."
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
-                        className="flex-1 h-10 px-3 rounded-lg border border-gray-200 bg-white text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
+                        className="flex-1 h-10 px-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-white text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all font-sans"
                       />
                       <button
                         type="submit"
                         disabled={!commentText.trim()}
-                        className="h-10 w-10 bg-[#030213] text-white hover:bg-opacity-95 rounded-lg flex items-center justify-center cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                        className="h-10 w-10 bg-[#030213] text-white hover:bg-opacity-95 rounded-md flex items-center justify-center cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                       >
                         <Send size={15} />
                       </button>
@@ -428,11 +428,11 @@ const Discussions = () => {
             />
 
             {/* Modal Box */}
-            <div className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-200">
+            <div className="relative transform overflow-hidden rounded-md bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-[rgba(0,0,0,0.1)]">
               <div className="bg-white px-6 pb-6 pt-5">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
+                <div className="flex items-center justify-between border-b border-[rgba(0,0,0,0.1)] pb-3.5">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                    <div className="w-8 h-8 rounded-md bg-[#f3f3f5] text-[#030213] flex items-center justify-center border border-[rgba(0,0,0,0.1)]">
                       <BookOpen size={16} />
                     </div>
                     <div>
@@ -444,14 +444,14 @@ const Discussions = () => {
                   </div>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="text-gray-400 hover:text-gray-500 border border-gray-150 hover:border-gray-200 rounded-lg p-1.5 transition-colors cursor-pointer"
+                    className="text-gray-400 hover:text-gray-500 border border-gray-150 hover:border-[rgba(0,0,0,0.1)] rounded-md p-1.5 transition-colors cursor-pointer"
                   >
                     <X size={16} />
                   </button>
                 </div>
 
                 {formError && (
-                  <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-[12px] font-medium border border-red-200">
+                  <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md text-[12px] font-medium border border-red-200">
                     {formError}
                   </div>
                 )}
@@ -468,7 +468,7 @@ const Discussions = () => {
                       placeholder="e.g. Updates on new V-CIP onboarding checklists"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-gray-50 text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                      className="w-full h-10 px-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-[#f3f3f5] text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all"
                     />
                   </div>
 
@@ -480,7 +480,7 @@ const Discussions = () => {
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-[13px] text-gray-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
+                      className="w-full h-10 px-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-white text-[13px] text-gray-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all cursor-pointer"
                     >
                       {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
                         <option key={cat} value={cat}>
@@ -501,24 +501,24 @@ const Discussions = () => {
                       placeholder="Write your discussion topic details here. All branch employees in your work groups can read and reply to this thread..."
                       value={newContent}
                       onChange={(e) => setNewContent(e.target.value)}
-                      className="w-full p-3 rounded-lg border border-gray-200 bg-gray-50 text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
+                      className="w-full p-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-[#f3f3f5] text-[13px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all resize-none"
                     />
                   </div>
                 </form>
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-100">
+              <div className="bg-[#f3f3f5] px-6 py-4 flex items-center justify-end gap-3 border-t border-[rgba(0,0,0,0.1)]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-[13px] font-semibold cursor-pointer"
+                  className="px-4 py-2 border border-[rgba(0,0,0,0.1)] rounded-md text-gray-700 hover:bg-gray-100 transition-colors text-[13px] font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateThread}
-                  className="px-4 py-2 bg-[#030213] text-white hover:bg-opacity-90 rounded-lg text-[13px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-[#030213] text-white hover:bg-opacity-90 rounded-md text-[13px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   Post Thread
                   <ArrowRight size={14} />

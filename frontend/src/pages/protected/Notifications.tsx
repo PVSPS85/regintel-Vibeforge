@@ -118,19 +118,19 @@ const getApprovalIcon = (type: ApprovalItem['type']) => {
   switch (type) {
     case 'AccessRequest':
       return (
-        <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+        <div className="w-8 h-8 rounded-md bg-[#f3f3f5] text-[#030213] flex items-center justify-center border border-[rgba(0,0,0,0.1)]">
           <User size={16} />
         </div>
       );
     case 'TaskVerification':
       return (
-        <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+        <div className="w-8 h-8 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
           <CheckCircle size={16} />
         </div>
       );
     case 'PolicyReview':
       return (
-        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+        <div className="w-8 h-8 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
           <FileText size={16} />
         </div>
       );
@@ -159,7 +159,7 @@ const getAlertIcon = (type: AlertItem['type']) => {
       );
     case 'Team':
       return (
-        <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/50">
+        <div className="w-8 h-8 rounded-full bg-[#f3f3f5] text-[#030213] flex items-center justify-center shrink-0 border border-[rgba(0,0,0,0.1)]/50">
           <Users size={14} />
         </div>
       );
@@ -222,7 +222,7 @@ const Notifications = () => {
         {unreadAlertsCount > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-[12px] font-semibold text-gray-600 hover:text-gray-900 transition-colors shadow-sm self-start sm:self-center cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[rgba(0,0,0,0.1)] hover:bg-[#f3f3f5] text-[12px] font-semibold text-gray-600 hover:text-gray-900 transition-colors shadow-sm self-start sm:self-center cursor-pointer"
           >
             Mark All Read
           </button>
@@ -230,7 +230,7 @@ const Notifications = () => {
       </div>
 
       {/* ── Tabs pill bar ── */}
-      <div className="flex border-b border-gray-200 gap-6">
+      <div className="flex border-b border-[rgba(0,0,0,0.1)] gap-6">
         <button
           onClick={() => setActiveTab('All')}
           className={`pb-4 px-1 text-[14px] font-semibold transition-all relative cursor-pointer flex items-center gap-2 ${activeTab === 'All' ? 'text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-900'
@@ -254,7 +254,7 @@ const Notifications = () => {
         >
           Pending Approvals
           {pendingApprovalsCount > 0 && (
-            <span className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-indigo-600 text-white shadow-xs">
+            <span className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-[#030213] text-white shadow-xs">
               {pendingApprovalsCount}
             </span>
           )}
@@ -298,7 +298,7 @@ const Notifications = () => {
                 approvals.map((app) => (
                   <div
                     key={app.id}
-                    className={`bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4 transition-all relative overflow-hidden ${app.actionStatus !== 'Pending' ? 'opacity-85 border-gray-250 bg-gray-50/20' : 'hover:border-gray-300'
+                    className={`bg-white rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm p-5 space-y-4 transition-all relative overflow-hidden ${app.actionStatus !== 'Pending' ? 'opacity-85 border-gray-250 bg-[#f3f3f5]/20' : 'hover:border-gray-300'
                       }`}
                   >
                     {/* Header: Badge & Date */}
@@ -314,7 +314,7 @@ const Notifications = () => {
 
                     {/* Metadata Card Details */}
                     <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-2 bg-gray-50/80 p-3 rounded-lg border border-gray-150 text-[12px] font-medium">
+                      <div className="grid grid-cols-3 gap-2 bg-[#f3f3f5]/80 p-3 rounded-md border border-gray-150 text-[12px] font-medium">
                         <div>
                           <span className="text-gray-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">
                             Employee ID
@@ -342,18 +342,18 @@ const Notifications = () => {
                     </div>
 
                     {/* Actions Panel */}
-                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-[rgba(0,0,0,0.1)]">
                       {app.actionStatus === 'Pending' ? (
                         <>
                           <button
                             onClick={() => handleApprovalAction(app.id, 'Rejected')}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-98 text-[12px] font-bold rounded-lg transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-98 text-[12px] font-bold rounded-md transition-all cursor-pointer"
                           >
                             Reject/Return
                           </button>
                           <button
                             onClick={() => handleApprovalAction(app.id, 'Approved')}
-                            className="inline-flex items-center gap-1.5 px-4.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-98 text-[12px] font-bold rounded-lg transition-all cursor-pointer shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-4.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-98 text-[12px] font-bold rounded-md transition-all cursor-pointer shadow-sm"
                           >
                             <Check size={14} />
                             Approve Access
@@ -383,7 +383,7 @@ const Notifications = () => {
                   </div>
                 ))
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400 text-[13px]">
+                <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] p-8 text-center text-gray-400 text-[13px]">
                   No pending employee approval requests found.
                 </div>
               )}
@@ -404,7 +404,7 @@ const Notifications = () => {
                   <div
                     key={alert.id}
                     onClick={() => handleMarkAlertRead(alert.id)}
-                    className={`flex items-start gap-3 bg-white p-4 rounded-xl border transition-all shadow-xs relative group cursor-pointer ${alert.unread ? 'border-amber-200/80 bg-amber-50/5/20' : 'border-gray-200'
+                    className={`flex items-start gap-3 bg-white p-4 rounded-md border transition-all shadow-xs relative group cursor-pointer ${alert.unread ? 'border-amber-200/80 bg-amber-50/5/20' : 'border-[rgba(0,0,0,0.1)]'
                       }`}
                   >
                     {/* Left Icon */}
@@ -442,7 +442,7 @@ const Notifications = () => {
                   </div>
                 ))
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400 text-[13px]">
+                <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] p-8 text-center text-gray-400 text-[13px]">
                   No active system alerts or notifications.
                 </div>
               )}

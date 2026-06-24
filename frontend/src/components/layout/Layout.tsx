@@ -1,33 +1,26 @@
 import { Outlet } from 'react-router';
+import Sidebar from './Sidebar';
 import Topbar from './Topbar';
-import Sidebar, { type UserRole } from './Sidebar';
 
-/**
- * Layout – wraps all protected routes.
- *
- * `userRole` is currently mocked here; once auth is wired up, replace with a
- * value sourced from your auth context / store.
- *
- * Try switching the value below to "Branch Manager" or "System Admin" to see
- * the Admin Control Panel section appear in the sidebar.
- */
-const MOCK_ROLE: UserRole = 'Employee';
-
-const Layout = () => {
+export default function Layout() {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-      <Sidebar userRole={MOCK_ROLE} />
-
-      {/* Right column: topbar + page content */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      {/* Sidebar on the left */}
+      <Sidebar />
+      
+      {/* Right panel */}
+      <div className="h-screen flex flex-col flex-1 min-w-0">
+        {/* Topbar across the top of right panel */}
         <Topbar />
-
-        <main style={{ flex: 1, minWidth: 0 }}>
-          <Outlet />
+        
+        {/* Main content container */}
+        <main className="flex-1 overflow-y-auto bg-[#f3f3f5] p-6 pb-10">
+          {/* Render child routes */}
+          <div className="min-h-full w-full rounded-md bg-white shadow-sm border border-[rgba(0,0,0,0.1)]/50 pb-10">
+             <Outlet />
+          </div>
         </main>
       </div>
     </div>
   );
-};
-
-export default Layout;
+}

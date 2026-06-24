@@ -1,13 +1,11 @@
 import {
   Activity,
   AlertCircle,
-  BellRing,
   CheckCircle2,
-  ChevronRight,
   FileText,
-  MessageSquare,
   ShieldAlert,
   Users,
+  Clock,
 } from 'lucide-react';
 import {
   Area,
@@ -43,36 +41,50 @@ const TASK_DELIVERY_DATA = [
 const RECENT_ACTIVITY = [
   {
     id: 1,
-    icon: <FileText size={16} className="text-indigo-600" />,
-    bg: 'bg-indigo-50',
-    title: 'New Regulation Uploaded by AI Agent',
-    desc: 'RBI Circular on Digital Lending Guidelines parsed and mapped.',
+    icon: <FileText size={14} className="text-blue-600" />,
+    bg: 'bg-blue-50',
+    title: 'New Regulation Uploaded',
+    desc: 'RBI Circular on Digital Lending Guidelines',
     time: '10 mins ago',
   },
   {
     id: 2,
-    icon: <Users size={16} className="text-emerald-600" />,
-    bg: 'bg-emerald-50',
-    title: 'Task Assigned to IT Security Team',
-    desc: 'Implement mandatory 2FA for all internal branch portals.',
+    icon: <Users size={14} className="text-green-600" />,
+    bg: 'bg-green-50',
+    title: 'Task Assigned to IT',
+    desc: 'Implement mandatory 2FA for all branch portals.',
     time: '2 hours ago',
   },
   {
     id: 3,
-    icon: <CheckCircle2 size={16} className="text-blue-600" />,
-    bg: 'bg-blue-50',
-    title: 'Branch Transfer Request Processed',
-    desc: 'Employee ID #8492 transferred to Mumbai South Branch.',
+    icon: <CheckCircle2 size={14} className="text-gray-600" />,
+    bg: 'bg-gray-100',
+    title: 'Branch Transfer Processed',
+    desc: 'Employee ID #8492 transferred to MG Road.',
     time: '5 hours ago',
   },
   {
     id: 4,
-    icon: <ShieldAlert size={16} className="text-amber-600" />,
-    bg: 'bg-amber-50',
-    title: 'Compliance Alert Triggered',
-    desc: 'KYC missing for 14 high-value accounts in Fort Branch.',
+    icon: <ShieldAlert size={14} className="text-orange-600" />,
+    bg: 'bg-orange-50',
+    title: 'Compliance Alert',
+    desc: 'KYC missing for 14 high-value accounts.',
     time: '1 day ago',
   },
+];
+
+const TEAM_COMPLIANCE = [
+  { name: 'IT Security', score: 98, color: 'bg-green-500' },
+  { name: 'Compliance', score: 92, color: 'bg-blue-500' },
+  { name: 'Legal', score: 85, color: 'bg-yellow-500' },
+  { name: 'Human Resources', score: 76, color: 'bg-orange-500' },
+];
+
+const RECENT_REGULATIONS = [
+  { title: 'Data Privacy Framework 2026', status: 'SENT', statusColor: 'text-green-700 bg-green-100' },
+  { title: 'Q3 AML Reporting Guidelines', status: 'REVIEW', statusColor: 'text-orange-700 bg-orange-100' },
+  { title: 'Cybersecurity Audit Memo', status: 'SENT', statusColor: 'text-green-700 bg-green-100' },
+  { title: 'Branch Ops Manual v4', status: 'REVIEW', statusColor: 'text-orange-700 bg-orange-100' },
 ];
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -81,37 +93,25 @@ const MetricCard = ({
   title,
   value,
   icon,
-  trend,
-  trendLabel,
+  colorClass,
+  bgClass,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  trend?: string;
-  trendLabel?: string;
+  colorClass: string;
+  bgClass: string;
 }) => (
-  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm transition-shadow hover:shadow-md">
-    <div className="flex items-start justify-between">
-      <div>
-        <p className="text-[13px] font-medium text-gray-500 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-      </div>
-      <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100">
+  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+    <div className="flex items-center justify-between mb-4">
+      <div className={`w-10 h-10 rounded-lg ${bgClass} flex items-center justify-center ${colorClass}`}>
         {icon}
       </div>
     </div>
-    {trend && (
-      <div className="mt-4 flex items-center gap-2">
-        <span
-          className={`text-[12px] font-semibold ${
-            trend.startsWith('+') ? 'text-emerald-600' : 'text-red-600'
-          }`}
-        >
-          {trend}
-        </span>
-        <span className="text-[12px] text-gray-400">{trendLabel}</span>
-      </div>
-    )}
+    <div>
+      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+      <p className="text-[13px] font-medium text-gray-500 mt-1">{title}</p>
+    </div>
   </div>
 );
 
@@ -119,219 +119,225 @@ const MetricCard = ({
 
 const Dashboard = () => {
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 font-sans">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 font-sans bg-[#f9fafb] min-h-screen">
+      
       {/* ── Section A: Welcome Header ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
-              Mumbai - Fort Branch
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Systems Online
-            </span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Welcome back, Arjun Mehta.
-          </h1>
-          <p className="text-[14px] text-gray-500 mt-1">
-            Here's what's happening in your regulatory workspace today.
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            Dashboard · Branch compliance overview
+          </p>
+          <p className="text-sm font-medium text-gray-400">
+            Wednesday, 24 June 2026
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="h-10 px-4 rounded-lg bg-white border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
-            Generate Report
-          </button>
-          <button
-            className="h-10 px-4 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-            style={{ background: '#030213' }}
-          >
-            New Action Point
-          </button>
+        <div className="mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+            Good morning,<br />New User
+          </h1>
+          <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-600" />
+            Bengaluru — MG Road Branch
+          </p>
         </div>
       </div>
 
       {/* ── Section B: Summary Metric Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
-          title="Pending Action Points"
+          title="Pending Tasks"
           value="23"
-          icon={<AlertCircle size={20} />}
-          trend="-4"
-          trendLabel="vs last week"
+          icon={<Clock size={20} />}
+          colorClass="text-orange-600"
+          bgClass="bg-orange-50"
         />
         <MetricCard
-          title="Unread Messages"
+          title="Completed Tasks"
           value="148"
-          icon={<MessageSquare size={20} />}
-          trend="+12"
-          trendLabel="since yesterday"
+          icon={<CheckCircle2 size={20} />}
+          colorClass="text-green-600"
+          bgClass="bg-green-50"
         />
         <MetricCard
           title="Active Teams"
           value="5"
           icon={<Users size={20} />}
+          colorClass="text-blue-600"
+          bgClass="bg-blue-50"
         />
         <MetricCard
-          title="Urgent Notifications"
+          title="Open Alerts"
           value="7"
-          icon={<BellRing size={20} className="text-red-500" />}
+          icon={<AlertCircle size={20} />}
+          colorClass="text-red-600"
+          bgClass="bg-red-50"
         />
         <MetricCard
-          title="Compliance Rating"
+          title="Compliance Score"
           value="91%"
-          icon={<Activity size={20} className="text-indigo-600" />}
-          trend="+2.4%"
-          trendLabel="vs last month"
+          icon={<Activity size={20} />}
+          colorClass="text-purple-600"
+          bgClass="bg-purple-50"
         />
       </div>
 
-      {/* ── Section C & D: Charts & Activity ── */}
+      {/* ── Section C: Charts Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Charts Column (Span 2) */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Area Chart: Compliance Score Trend */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="mb-6">
-              <h3 className="text-base font-bold text-gray-900">Compliance Score Trend</h3>
-              <p className="text-[13px] text-gray-500">7-month historical performance</p>
-            </div>
-            <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={COMPLIANCE_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#030213" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#030213" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#6b7280', fontSize: 12 }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    domain={['dataMin - 5', 100]} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#6b7280', fontSize: 12 }} 
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#030213"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorScore)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Bar Chart: Task Delivery */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="mb-6">
-              <h3 className="text-base font-bold text-gray-900">Monthly Task Delivery</h3>
-              <p className="text-[13px] text-gray-500">Completed vs Pending action points</p>
-            </div>
-            <div className="h-[240px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={TASK_DELIVERY_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="week" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#6b7280', fontSize: 12 }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#6b7280', fontSize: 12 }} 
-                  />
-                  <Tooltip 
-                    cursor={{ fill: '#f3f4f6' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Bar dataKey="completed" name="Completed" fill="#030213" radius={[4, 4, 0, 0]} barSize={32} />
-                  <Bar dataKey="pending" name="Pending" fill="#e5e7eb" radius={[4, 4, 0, 0]} barSize={32} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Activity Log Column (Span 1) */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        {/* Line Chart: Compliance Score Trend */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="mb-6 flex justify-between items-center">
             <div>
-              <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
-              <p className="text-[13px] text-gray-500">Live system events</p>
-            </div>
-            <button className="text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center">
-              View All <ChevronRight size={14} className="ml-0.5" />
-            </button>
-          </div>
-          <div className="p-6 flex-1">
-            <div className="space-y-6">
-              {RECENT_ACTIVITY.map((item, idx) => (
-                <div key={item.id} className="relative flex gap-4">
-                  {/* Vertical timeline line */}
-                  {idx !== RECENT_ACTIVITY.length - 1 && (
-                    <div className="absolute top-8 bottom-[-24px] left-[15px] w-px bg-gray-100" />
-                  )}
-                  
-                  {/* Icon */}
-                  <div className={`w-8 h-8 rounded-full ${item.bg} flex items-center justify-center shrink-0 ring-4 ring-white z-10`}>
-                    {item.icon}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="pt-1.5 pb-2">
-                    <p className="text-[14px] font-semibold text-gray-900 leading-tight">
-                      {item.title}
-                    </p>
-                    <p className="text-[13px] text-gray-500 mt-1 leading-snug">
-                      {item.desc}
-                    </p>
-                    <p className="text-[11px] font-medium text-gray-400 mt-2 uppercase tracking-wider">
-                      {item.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <h3 className="text-base font-bold text-gray-900">Compliance Score Trend</h3>
+              <p className="text-[13px] text-gray-500 mt-1">7-month historical performance</p>
             </div>
           </div>
-          {/* Bottom Callout */}
-          <div className="p-5 bg-gray-50 mt-auto rounded-b-xl border-t border-gray-100">
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0">
-                <AlertCircle size={16} className="text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-gray-900">Weekly Summary Ready</p>
-                <p className="text-[12px] text-gray-500 mt-0.5">Your AI-generated digest for Fort Branch is available.</p>
-                <button className="text-[12px] font-semibold text-indigo-600 mt-2 hover:underline">
-                  Read Digest
-                </button>
-              </div>
-            </div>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={COMPLIANCE_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
+                  dy={10}
+                />
+                <YAxis 
+                  domain={['dataMin - 5', 100]} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
+                />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#2563eb"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorScore)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
-        
+
+        {/* Bar Chart: Monthly Task Volume */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Monthly Task Volume</h3>
+              <p className="text-[13px] text-gray-500 mt-1">Completed vs Pending action points</p>
+            </div>
+          </div>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={TASK_DELIVERY_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="week" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f3f4f6' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="completed" name="Completed" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24} />
+                <Bar dataKey="pending" name="Pending" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
       </div>
+
+      {/* ── Section D: Bottom Row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Panel 1: Recent Activity */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
+            <button className="text-[13px] font-semibold text-blue-600 hover:text-blue-700">View All</button>
+          </div>
+          <div className="space-y-5">
+            {RECENT_ACTIVITY.map((item) => (
+              <div key={item.id} className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-full ${item.bg} flex items-center justify-center shrink-0`}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-gray-900">{item.title}</p>
+                  <p className="text-[12px] text-gray-500 mt-0.5">{item.desc}</p>
+                  <p className="text-[11px] font-medium text-gray-400 mt-1 uppercase tracking-wider">{item.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 2: Team Compliance */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-bold text-gray-900">Team Compliance</h3>
+          </div>
+          <div className="space-y-6">
+            {TEAM_COMPLIANCE.map((team) => (
+              <div key={team.name}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[13px] font-semibold text-gray-900">{team.name}</span>
+                  <span className="text-[13px] font-bold text-gray-700">{team.score}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${team.color} rounded-full`} style={{ width: `${team.score}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 3: Recent Regulations */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-bold text-gray-900">Recent Regulations</h3>
+            <button className="text-[13px] font-semibold text-blue-600 hover:text-blue-700">View All</button>
+          </div>
+          <div className="space-y-4">
+            {RECENT_REGULATIONS.map((reg, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                    <FileText size={14} className="text-gray-500" />
+                  </div>
+                  <p className="text-[13px] font-semibold text-gray-900 line-clamp-1">{reg.title}</p>
+                </div>
+                <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${reg.statusColor}`}>
+                  {reg.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
     </div>
   );
 };

@@ -72,7 +72,7 @@ const MOCK_EMPLOYEES: Employee[] = [
     email: 'arjun.mehta@regintel.com',
     phone: '+91 98765 43213',
     avatar: 'AM',
-    avatarColor: 'bg-indigo-600',
+    avatarColor: 'bg-[#030213]',
     online: true,
   },
   {
@@ -146,7 +146,7 @@ const Directory = () => {
       </div>
 
       {/* ── Search Bar ── */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center">
+      <div className="bg-white p-4 rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm flex items-center">
         <div className="relative w-full max-w-md">
           <Search
             size={16}
@@ -157,7 +157,7 @@ const Directory = () => {
             placeholder="Search by name, role, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 bg-gray-50 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-md border border-[rgba(0,0,0,0.1)] bg-[#f3f3f5] text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all"
           />
         </div>
       </div>
@@ -168,7 +168,7 @@ const Directory = () => {
           {filteredEmployees.map((emp) => (
             <div
               key={emp.id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md hover:border-gray-300 transition-all flex flex-col justify-between"
+              className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm p-6 hover:shadow-md hover:border-gray-300 transition-all flex flex-col justify-between"
             >
               {/* Employee Top Details */}
               <div className="space-y-4">
@@ -191,13 +191,13 @@ const Directory = () => {
                   {/* Name and Title */}
                   <div className="space-y-0.5">
                     <h2 className="text-[16px] font-bold text-gray-900 tracking-tight">{emp.name}</h2>
-                    <p className="text-[12px] font-semibold text-indigo-600">{emp.role}</p>
+                    <p className="text-[12px] font-semibold text-[#030213]">{emp.role}</p>
                     <p className="text-[11px] font-medium text-gray-400 font-mono">{emp.id}</p>
                   </div>
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-gray-100" />
+                <div className="border-t border-[rgba(0,0,0,0.1)]" />
 
                 {/* Contact Metadata */}
                 <div className="space-y-2 text-[12px] text-gray-500 font-medium">
@@ -221,10 +221,10 @@ const Directory = () => {
               </div>
 
               {/* Message Action Button */}
-              <div className="pt-5 mt-4 border-t border-gray-100">
+              <div className="pt-5 mt-4 border-t border-[rgba(0,0,0,0.1)]">
                 <button
                   onClick={() => handleMessageClick(emp.id)}
-                  className={`w-full h-10 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  className={`w-full h-10 rounded-md text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all ${
                     messagedIds.has(emp.id)
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-[#030213] text-white hover:bg-opacity-90 shadow-sm active:scale-98'
@@ -247,7 +247,7 @@ const Directory = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-[14px]">
+        <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] p-12 text-center text-gray-400 text-[14px]">
           No branch employees found matching your criteria.
         </div>
       )}

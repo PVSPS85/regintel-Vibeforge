@@ -3,42 +3,46 @@ import {
   ChevronDown,
   Globe,
   LogOut,
-  Search,
   Settings,
   User,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import './Topbar.css';
 
 // ─── Route → Page title map ───────────────────────────────────────────────────
 
 const ROUTE_TITLES: Record<string, string> = {
-  '/dashboard':     'Dashboard',
-  '/chats':         'Chats',
-  '/teams':         'Teams',
-  '/action-points': 'Action Points',
-  '/documents':     'Documents',
-  '/discussions':   'Discussions Forum',
-  '/directory':     'Branch Directory',
-  '/regulations':   'Regulations',
-  '/notifications': 'Notifications',
+  '/dashboard':       'Dashboard',
+  '/chats':           'Chats',
+  '/teams':           'Teams',
+  '/team-workspace':  'Team Workspace',
+  '/task-detail':     'Task Detail',
+  '/action-points':   'Action Points',
+  '/documents':       'Documents',
+  '/discussions':     'Discussions',
+  '/directory':       'Branch Directory',
+  '/regulations':     'Regulations',
+  '/notifications':   'Notifications',
+  '/branch-transfer': 'Branch Transfer',
   // Admin routes
-  '/admin/employee-approval': 'Employee Approval',
-  '/admin/user-management':   'User Management',
-  '/admin/branch-management': 'Branch Management',
-  '/admin/compliance':        'Compliance Monitoring',
+  '/admin/approvals':  'Admin Control Panel',
+  '/admin/users':      'User Management',
+  '/admin/compliance': 'Compliance Monitoring',
 };
 
 // ─── Mock user data (replace with auth context later) ────────────────────────
 
 const MOCK_USER = {
-  name:       'Aisha Mehta',
+  name:       'Arjun Mehta',
   initials:   'AM',
-  branch:     'BRN-042',
-  role:       'Compliance Officer',
+  branch:     'Mumbai — Fort',
+  role:       'Branch Manager' as 'Branch Manager' | 'System Admin' | 'Team Leader' | 'Employee',
   unreadNotifications: 4,
 };
+
+// Role guard – show settings for manager/admin
+const isAdminRole = MOCK_USER.role === 'Branch Manager' || MOCK_USER.role === 'System Admin';
 
 // ─── Language options ─────────────────────────────────────────────────────────
 
@@ -127,12 +131,14 @@ const LangPicker = () => {
 
 /** Notification bell with live badge counter */
 const NotificationBell = ({ count }: { count: number }) => {
+  const navigate = useNavigate();
   const capped = Math.min(count, 99);
   return (
     <button
       className="tb-icon-btn tb-notif-btn"
       aria-label={`Notifications – ${count} unread`}
       type="button"
+      onClick={() => navigate('/notifications')}
     >
       <Bell size={19} />
       {count > 0 && (
@@ -227,6 +233,23 @@ const ProfileMenu = () => {
   );
 };
 
+// ─── Settings Button (admin/manager only) ─────────────────────────────────────
+
+const SettingsButton = () => {
+  const navigate = useNavigate();
+  return (
+    <button
+      className="tb-icon-btn"
+      aria-label="Admin Settings"
+      title="Admin Control Panel"
+      type="button"
+      onClick={() => navigate('/admin/approvals')}
+    >
+      <Settings size={18} />
+    </button>
+  );
+};
+
 // ─── Topbar ───────────────────────────────────────────────────────────────────
 
 const Topbar = () => {
@@ -234,26 +257,15 @@ const Topbar = () => {
 
   return (
     <header className="topbar" role="banner">
-      {/* ── Left: title + search ── */}
+      {/* ── Left: title ── */}
       <div className="topbar__left">
         <h1 className="topbar__title">{pageTitle}</h1>
-
-        <label className="topbar__search-wrap" htmlFor="tb-search">
-          <Search size={15} className="topbar__search-icon" aria-hidden="true" />
-          <input
-            id="tb-search"
-            type="search"
-            className="topbar__search-input"
-            placeholder="Search…"
-            autoComplete="off"
-            aria-label="Global search"
-          />
-        </label>
       </div>
 
       {/* ── Right: controls cluster ── */}
       <div className="topbar__right" role="group" aria-label="Global controls">
         <LangPicker />
+        {isAdminRole && <SettingsButton />}
         <NotificationBell count={MOCK_USER.unreadNotifications} />
         <div className="topbar__divider" aria-hidden="true" />
         <ProfileMenu />

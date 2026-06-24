@@ -97,9 +97,9 @@ const getPriorityStyles = (priority: Priority) => {
 const getStatusStyles = (status: Status) => {
   switch (status) {
     case 'Pending':
-      return 'text-gray-500 bg-gray-50 border-gray-200';
+      return 'text-gray-500 bg-[#f3f3f5] border-[rgba(0,0,0,0.1)]';
     case 'In Progress':
-      return 'text-indigo-700 bg-indigo-50 border-indigo-200';
+      return 'text-[#030213] bg-[#f3f3f5] border-indigo-200';
     case 'Completed':
       return 'text-emerald-700 bg-emerald-50 border-emerald-200';
   }
@@ -148,7 +148,7 @@ const ActionPoints = () => {
       </div>
 
       {/* ── Toolbar (Search & Filters) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white p-4 rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm">
         {/* Search */}
         <div className="relative flex-1 min-w-[240px]">
           <Search
@@ -160,7 +160,7 @@ const ActionPoints = () => {
             placeholder="Search tasks by ID or title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 bg-gray-50 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-md border border-[rgba(0,0,0,0.1)] bg-[#f3f3f5] text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 transition-all"
           />
         </div>
 
@@ -171,7 +171,7 @@ const ActionPoints = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as Status | 'All')}
-              className="h-10 px-3 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-700 outline-none hover:bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer appearance-none"
+              className="h-10 px-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-white text-[13px] font-medium text-gray-700 outline-none hover:bg-[#f3f3f5] focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 cursor-pointer appearance-none"
             >
               <option value="All">All Status</option>
               <option value="Pending">Pending</option>
@@ -183,7 +183,7 @@ const ActionPoints = () => {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as Priority | 'All')}
-            className="h-10 px-3 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-700 outline-none hover:bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer appearance-none"
+            className="h-10 px-3 rounded-md border border-[rgba(0,0,0,0.1)] bg-white text-[13px] font-medium text-gray-700 outline-none hover:bg-[#f3f3f5] focus:border-indigo-400 focus:ring-2 focus:ring-[#030213]/20 cursor-pointer appearance-none"
           >
             <option value="All">All Priorities</option>
             <option value="High">High</option>
@@ -194,11 +194,11 @@ const ActionPoints = () => {
       </div>
 
       {/* ── Task List ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-200 text-[12px] font-semibold text-gray-500 uppercase tracking-wider">
+              <tr className="bg-[#f3f3f5]/50 border-b border-[rgba(0,0,0,0.1)] text-[12px] font-semibold text-gray-500 uppercase tracking-wider">
                 <th className="px-6 py-4 w-12"></th>
                 <th className="px-6 py-4">Task Details</th>
                 <th className="px-6 py-4 w-32">Priority</th>
@@ -214,8 +214,8 @@ const ActionPoints = () => {
                   return (
                     <tr
                       key={task.id}
-                      className={`group hover:bg-gray-50 transition-colors ${
-                        isCompleted ? 'bg-gray-50/30' : ''
+                      className={`group hover:bg-[#f3f3f5] transition-colors ${
+                        isCompleted ? 'bg-[#f3f3f5]/30' : ''
                       }`}
                     >
                       {/* Checkbox Action */}
@@ -290,7 +290,7 @@ const ActionPoints = () => {
                       <td className="px-6 py-4 align-top pt-5">
                         <div className="flex items-center gap-2 text-[13px] font-medium text-gray-700">
                           {task.assigneeType === 'team' ? (
-                            <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <div className="w-6 h-6 rounded-md bg-[#f3f3f5] text-[#030213] flex items-center justify-center shrink-0">
                               <Users size={12} />
                             </div>
                           ) : (

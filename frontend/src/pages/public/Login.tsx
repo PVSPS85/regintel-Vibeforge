@@ -1,13 +1,4 @@
-import {
-  Building2,
-  Eye,
-  EyeOff,
-  FileCheck2,
-  Lock,
-  Mail,
-  ShieldCheck,
-  Zap,
-} from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
@@ -23,22 +14,18 @@ interface LoginFormValues {
 
 const FEATURES = [
   {
-    icon: <ShieldCheck size={18} className="text-indigo-400 mt-0.5 shrink-0" />,
     title: 'AI-Powered Compliance',
     desc: 'Real-time regulatory analysis across 40+ jurisdictions.',
   },
   {
-    icon: <Zap size={18} className="text-indigo-400 mt-0.5 shrink-0" />,
     title: 'Instant Regulation Alerts',
     desc: 'Be notified the moment rules change — before it affects you.',
   },
   {
-    icon: <FileCheck2 size={18} className="text-indigo-400 mt-0.5 shrink-0" />,
     title: 'Automated Action Points',
     desc: 'Turn regulatory obligations into trackable team tasks.',
   },
   {
-    icon: <Building2 size={18} className="text-indigo-400 mt-0.5 shrink-0" />,
     title: 'Branch-Level Oversight',
     desc: 'Role-based access from branch officer to system admin.',
   },
@@ -67,24 +54,13 @@ const Login = () => {
 
       {/* ── Left panel ── */}
       <div
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
-        style={{ background: '#030213' }}
+        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden bg-blue-600"
         aria-hidden="true"
       >
-        {/* Subtle radial glow */}
-        <div
-          className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #4f46e5 0%, transparent 70%)' }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)' }}
-        />
-
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-extrabold text-base"
+            className="w-9 h-9 rounded-md flex items-center justify-center text-white font-extrabold text-base"
             style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}
           >
             R
@@ -97,25 +73,21 @@ const Login = () => {
         {/* Hero copy */}
         <div className="relative z-10 space-y-10">
           <div className="space-y-4">
-            <p className="text-indigo-400 text-sm font-semibold tracking-widest uppercase">
+            <p className="text-blue-100 text-sm font-semibold tracking-widest uppercase">
               Regulatory Intelligence Platform
             </p>
             <h1 className="text-white text-4xl font-extrabold leading-[1.18] tracking-tight max-w-sm">
-              Banking Compliance.{' '}
-              <span
-                className="bg-clip-text text-transparent"
-                style={{ backgroundImage: 'linear-gradient(90deg, #818cf8, #c4b5fd)' }}
-              >
-                Made Intelligent.
-              </span>
+              Banking Compliance. Made Intelligent.
             </h1>
           </div>
 
           {/* Feature bullets */}
           <ul className="space-y-5">
-            {FEATURES.map(({ icon, title, desc }) => (
+            {FEATURES.map(({ title, desc }) => (
               <li key={title} className="flex items-start gap-3">
-                {icon}
+                <div className="w-5 h-5 rounded-full border border-white flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                </div>
                 <div>
                   <p className="text-white text-sm font-semibold">{title}</p>
                   <p className="text-white/50 text-[13px] leading-snug mt-0.5">{desc}</p>
@@ -132,11 +104,28 @@ const Login = () => {
       </div>
 
       {/* ── Right panel ── */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center bg-white px-6 py-12 sm:px-12">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center bg-white px-6 py-12 sm:px-12 relative">
+        
+        {/* Top switcher */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex bg-gray-100 p-1 rounded-full text-xs font-semibold">
+          <Link
+            to="/login"
+            className="px-4 py-1.5 rounded-full bg-white text-gray-900 shadow-sm transition-all"
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/request-access"
+            className="px-4 py-1.5 rounded-full text-gray-500 hover:text-gray-900 transition-all"
+          >
+            Request Access
+          </Link>
+        </div>
+
         {/* Mobile logo */}
         <div className="flex items-center gap-2.5 mb-10 lg:hidden">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-extrabold text-sm"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-white font-extrabold text-sm"
             style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}
           >
             R
@@ -171,11 +160,6 @@ const Login = () => {
                 Work Email
               </label>
               <div className="relative">
-                <Mail
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  aria-hidden="true"
-                />
                 <input
                   id="login-email"
                   type="email"
@@ -184,13 +168,13 @@ const Login = () => {
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? 'login-email-err' : undefined}
                   className={`
-                    w-full h-11 pl-10 pr-4 rounded-lg border text-[14px] text-gray-900
-                    bg-gray-50 placeholder:text-gray-400 outline-none
+                    w-full h-11 px-4 rounded-md border text-[14px] text-gray-900
+                    bg-white placeholder:text-gray-400 outline-none
                     transition-[border-color,box-shadow] duration-150
-                    focus:bg-white focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/20
+                    focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20
                     ${errors.email
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-200'
+                      : 'border-gray-300'
                     }
                   `}
                   {...register('email', {
@@ -220,17 +204,12 @@ const Login = () => {
                 </label>
                 <button
                   type="button"
-                  className="text-[12px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                  className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Forgot password?
                 </button>
               </div>
               <div className="relative">
-                <Lock
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  aria-hidden="true"
-                />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -239,13 +218,13 @@ const Login = () => {
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? 'login-pw-err' : undefined}
                   className={`
-                    w-full h-11 pl-10 pr-11 rounded-lg border text-[14px] text-gray-900
-                    bg-gray-50 placeholder:text-gray-400 outline-none
+                    w-full h-11 px-4 pr-11 rounded-md border text-[14px] text-gray-900
+                    bg-white placeholder:text-gray-400 outline-none
                     transition-[border-color,box-shadow] duration-150
-                    focus:bg-white focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/20
+                    focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20
                     ${errors.password
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-200'
+                      : 'border-gray-300'
                     }
                   `}
                   {...register('password', {
@@ -277,13 +256,12 @@ const Login = () => {
               type="submit"
               disabled={isSubmitting}
               className="
-                w-full h-11 rounded-lg text-[14px] font-semibold text-white
+                w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700
                 flex items-center justify-center gap-2
-                transition-[opacity,transform] duration-150
+                transition-[opacity,transform,background-color] duration-150
                 disabled:opacity-60 disabled:cursor-not-allowed
-                hover:opacity-90 active:scale-[0.985]
+                active:scale-[0.985]
               "
-              style={{ background: '#030213' }}
             >
               {isSubmitting ? (
                 <>
@@ -311,7 +289,7 @@ const Login = () => {
             Don't have an account?{' '}
             <Link
               to="/request-access"
-              className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+              className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
             >
               Request access →
             </Link>
