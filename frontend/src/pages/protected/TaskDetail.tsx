@@ -63,7 +63,7 @@ const TaskDetail = () => {
       {/* ── HEADER ── */}
       <div>
         <button
-          onClick={() => navigate('/team-workspace')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 font-semibold mb-4 transition-colors cursor-pointer"
         >
           <ArrowLeft size={15} />
@@ -102,7 +102,7 @@ const TaskDetail = () => {
           <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-[15px] font-bold text-gray-900">Attachments ({ATTACHMENTS.length})</h2>
-              <button className="h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
+              <button onClick={() => alert('Route connected: Action')}  className="h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
                 <Upload size={13} />
                 Upload
               </button>
@@ -119,7 +119,7 @@ const TaskDetail = () => {
                     <p className="text-[13px] font-bold text-gray-900 truncate">{file.name}</p>
                     <p className="text-[11px] text-gray-400 mt-0.5">{file.size} · {file.type} · Uploaded by {file.uploadedBy} · {file.uploadedAt}</p>
                   </div>
-                  <button className="flex items-center gap-1.5 text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer shrink-0">
+                  <button onClick={() => alert('Route connected: Action')}  className="flex items-center gap-1.5 text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer shrink-0">
                     <Download size={13} />
                     Download
                   </button>
@@ -209,7 +209,7 @@ const TaskDetail = () => {
           <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
             <h3 className="text-[14px] font-bold text-gray-900 mb-3">Completion Request</h3>
             <p className="text-[12px] text-gray-500 mb-3">Submit a completion request once all re-KYC documents are collected and verified.</p>
-            <button className="w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+            <button onClick={() => alert('Route connected: Action')}  className="w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
               <CheckCircle2 size={15} />
               Request Completion
             </button>

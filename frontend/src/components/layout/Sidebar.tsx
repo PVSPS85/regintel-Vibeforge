@@ -7,19 +7,7 @@ import {
   Users,
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router';
-
-// ─── Mock session (replace with real auth context later) ──────────────────────
-
-const SESSION = {
-  name: 'Arjun Mehta',
-  initials: 'AM',
-  empId: 'EMP-4821',
-  role: 'Branch Manager' as 'Branch Manager' | 'System Admin' | 'Team Leader' | 'Employee',
-  branch: 'Mumbai',
-  branchFull: 'Fort Branch',
-};
-
-const isAdmin = SESSION.role === 'Branch Manager' || SESSION.role === 'System Admin';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -46,8 +34,8 @@ const SidebarLink = ({
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
-          isActive ? activeColor : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        `flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-300 ease-in-out active:scale-95 ${
+          isActive ? activeColor : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:-translate-y-0.5 hover:shadow-sm'
         }`
       }
     >
@@ -72,9 +60,10 @@ const SidebarLink = ({
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const { user: SESSION, isAdmin } = useAuth();
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col font-sans shrink-0">
+    <aside className="w-64 h-screen bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col font-sans shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       {/* Logo */}
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-5">
@@ -126,9 +115,9 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* User Profile */}
-      <div className="px-3 pb-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2.5 rounded-xl cursor-pointer transition-colors group">
+      {/* User Profile & Logout */}
+      <div className="px-3 pb-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
             {SESSION.initials}
           </div>
@@ -136,14 +125,18 @@ export default function Sidebar() {
             <p className="text-[13px] font-bold text-gray-900 truncate">{SESSION.name}</p>
             <p className="text-[11px] text-gray-500 truncate">{SESSION.empId} · {SESSION.role}</p>
           </div>
-          <button
-            onClick={() => navigate('/login')}
-            title="Sign out"
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 text-gray-400 shrink-0"
-          >
-            <LogOut size={15} />
-          </button>
         </div>
+        <button
+          onClick={() => {
+            // Clear any mock auth state here if applicable
+            localStorage.clear();
+            navigate('/login');
+          }}
+          className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg text-[13px] font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-sm active:scale-95 cursor-pointer"
+        >
+          <LogOut size={16} />
+          Log Out
+        </button>
       </div>
     </aside>
   );

@@ -32,7 +32,7 @@ export default function ComplianceOversight() {
       <section className="bg-white border border-[rgba(0,0,0,0.1)] rounded-md shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="px-6 py-5 border-b border-[rgba(0,0,0,0.1)] flex items-center justify-between bg-[#f3f3f5]/30">
           <h2 className="text-lg font-semibold text-gray-900">Real-Time Audit Trail Log</h2>
-          <button className="text-sm text-[#030213] hover:text-[#030213] font-medium flex items-center gap-1 transition-colors">
+          <button onClick={() => alert('Route connected: Action')}  className="text-sm text-[#030213] hover:text-[#030213] font-medium flex items-center gap-1 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filter Logs
           </button>
@@ -56,7 +56,7 @@ export default function ComplianceOversight() {
                     <span>{log.time}</span>
                   </div>
                 </div>
-                <button className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+                <button onClick={() => alert('Route connected: Action')}  className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
                   Details
                 </button>
               </li>

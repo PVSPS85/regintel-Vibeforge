@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -187,6 +188,7 @@ const statusBg = (s: 'Pending' | 'In Progress' | 'Completed') =>
 export default function TeamWorkspace() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const activeTeamId = teamId && TEAMS_DATA[teamId] ? teamId : 'it-security';
   const team = TEAMS_DATA[activeTeamId];
@@ -291,21 +293,23 @@ export default function TeamWorkspace() {
               <ShieldCheck size={12} />
               Active Workspace
             </span>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors">
-              <ArrowLeftRight size={12} />
-              Transfer Leadership
-            </button>
+            {isAdmin && (
+              <button onClick={() => alert('Route connected: Action')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors cursor-pointer">
+                <ArrowLeftRight size={12} />
+                Transfer Leadership
+              </button>
+            )}
           </div>
         </div>
 
         {/* Compliance bar */}
         <div className="mb-4 space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase flex items-center gap-1.5">
               <TrendingUp size={12} />
               Team Compliance Score
             </span>
-            <span className="text-gray-900">{team.complianceRating}%</span>
+            <span className="text-2xl font-bold tracking-tight text-gray-900">{team.complianceRating}%</span>
           </div>
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
@@ -351,8 +355,8 @@ export default function TeamWorkspace() {
           <div className="flex flex-1 gap-6 p-8 overflow-y-auto">
             {/* Left: Team Members */}
             <div className="w-72 shrink-0 space-y-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Team Members ({team.members.length})</h3>
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+              <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Team Members ({team.members.length})</h3>
+              <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] divide-y divide-gray-100">
                 {team.members.map((m) => (
                   <div key={m.name} className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
@@ -367,7 +371,7 @@ export default function TeamWorkspace() {
                         <p className="text-xs text-gray-500">{m.role}</p>
                       </div>
                     </div>
-                    <button className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-400 transition-colors">
+                    <button onClick={() => alert('Route connected: Action')}  className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-400 transition-colors">
                       <MessageSquare size={13} />
                     </button>
                   </div>
@@ -378,13 +382,15 @@ export default function TeamWorkspace() {
             {/* Right: Task List */}
             <div className="flex-1 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Action Points · {tasks.filter((t) => t.status === 'Completed').length}/{tasks.length} Done
                 </h3>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
-                  <Plus size={12} />
-                  Add Task
-                </button>
+                {isAdmin && (
+                  <button onClick={() => alert('Route connected: Action')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer">
+                    <Plus size={12} />
+                    Add Task
+                  </button>
+                )}
               </div>
 
               <div className="space-y-2.5">
@@ -393,8 +399,8 @@ export default function TeamWorkspace() {
                   return (
                     <div
                       key={t.id}
-                      className={`p-4 rounded-xl border transition-all flex items-start gap-3 ${
-                        done ? 'bg-gray-50/50 border-gray-100 opacity-70' : 'bg-white border-gray-200 hover:border-gray-300 shadow-sm'
+                      className={`p-4 rounded-xl transition-all flex items-start gap-3 ${
+                        done ? 'bg-gray-50/50 border border-gray-200/50 opacity-70' : 'bg-white/80 backdrop-blur-lg border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20'
                       }`}
                     >
                       {/* Checkbox */}
@@ -438,16 +444,18 @@ export default function TeamWorkspace() {
         {activeTab === 'documents' && (
           <div className="flex-1 p-8 space-y-5 overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Team Documents ({team.docs.length})</h3>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
-                <Upload size={12} />
-                Upload Document
-              </button>
+              <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Team Documents ({team.docs.length})</h3>
+              {isAdmin && (
+                <button onClick={() => alert('Route connected: Action')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer">
+                  <Upload size={12} />
+                  Upload Document
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {team.docs.map((doc) => (
-                <div key={doc.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+                <div key={doc.id} className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                       doc.type === 'AI' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
@@ -468,11 +476,11 @@ export default function TeamWorkspace() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-4">
-                    <button className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button onClick={() => alert('Route connected: Action')}  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <Eye size={12} />
                       View
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button onClick={() => alert('Route connected: Action')}  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <Download size={12} />
                       Download
                     </button>
@@ -538,7 +546,7 @@ export default function TeamWorkspace() {
         {activeTab === 'regulations' && (
           <div className="flex-1 p-8 space-y-5 overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                 Regulation Action Points for {team.name}
               </h3>
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -554,10 +562,10 @@ export default function TeamWorkspace() {
               {team.regulations.map((reg) => (
                 <div
                   key={reg.id}
-                  className={`p-5 rounded-xl border transition-all ${
+                  className={`p-5 rounded-2xl transition-all ${
                     reg.status === 'Done'
-                      ? 'bg-emerald-50/30 border-emerald-100'
-                      : 'bg-white border-gray-200 shadow-sm hover:border-gray-300'
+                      ? 'bg-emerald-50/30 ring-1 ring-emerald-600/20'
+                      : 'bg-white/80 backdrop-blur-lg border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -585,8 +593,8 @@ export default function TeamWorkspace() {
                         </p>
                       </div>
                     </div>
-                    {reg.status === 'Pending' && (
-                      <button className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors shrink-0">
+                    {reg.status === 'Pending' && isAdmin && (
+                      <button onClick={() => alert('Route connected: Action')} className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors shrink-0 cursor-pointer">
                         Mark Done
                       </button>
                     )}

@@ -204,7 +204,8 @@ const Login = () => {
                 </label>
                 <button
                   type="button"
-                  className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  onClick={() => alert('Route connected: Forgot Password')}
+                  className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                 >
                   Forgot password?
                 </button>

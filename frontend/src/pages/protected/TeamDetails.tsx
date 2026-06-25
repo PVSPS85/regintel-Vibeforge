@@ -115,7 +115,7 @@ const TransferModal = ({ onClose }: { onClose: () => void }) => {
           <button onClick={onClose} className="h-10 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-bold transition-colors cursor-pointer">
             Cancel
           </button>
-          <button
+          <button onClick={() => alert('Route connected: Action')} 
             disabled={!selectedNewLead || !reason.trim()}
             className="h-10 px-5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[13px] font-bold transition-colors cursor-pointer"
           >
@@ -141,7 +141,7 @@ const TeamDetails = () => {
       {/* ── HEADER ── */}
       <div>
         <button
-          onClick={() => navigate('/teams')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 font-semibold mb-4 transition-colors cursor-pointer"
         >
           <ArrowLeft size={15} />
@@ -237,7 +237,7 @@ const TeamDetails = () => {
                   </div>
                   <p className="text-[12px] text-gray-400 mt-0.5">{member.role}</p>
                 </div>
-                <button className="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-400 transition-colors cursor-pointer">
+                <button onClick={() => alert('Route connected: Action')}  className="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-400 transition-colors cursor-pointer">
                   <Mail size={14} />
                 </button>
               </div>

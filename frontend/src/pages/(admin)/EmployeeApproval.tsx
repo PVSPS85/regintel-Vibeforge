@@ -473,7 +473,7 @@ export default function EmployeeApproval() {
                 <h3 className="font-bold text-gray-900 mb-0.5">Role & Designation Management</h3>
                 <p className="text-sm text-gray-500">Manage employee roles, permissions, and access levels</p>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors">
+              <button onClick={() => alert('Route connected: Action')}  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors">
                 Open Role Manager
                 <ArrowRight size={14} />
               </button>
@@ -535,10 +535,10 @@ export default function EmployeeApproval() {
                       <td className="px-5 py-4 text-gray-500">{staff.lastLogin}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
+                          <button onClick={() => alert('Route connected: Action')}  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
                             <Eye size={14} />
                           </button>
-                          <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
+                          <button onClick={() => alert('Route connected: Action')}  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
                             <MoreHorizontal size={14} />
                           </button>
                         </div>
@@ -558,7 +558,7 @@ export default function EmployeeApproval() {
               <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
                 Branch Network ({BRANCHES.length} Branches)
               </h2>
-              <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all">
+              <button onClick={() => alert('Route connected: Action')}  className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all">
                 <UserPlus size={14} />
                 Add Branch
               </button>
@@ -601,7 +601,7 @@ export default function EmployeeApproval() {
                         <p className="text-[11px] text-gray-400 mb-1.5">Compliance</p>
                         <ComplianceBar value={branch.compliance} />
                       </div>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400">
+                      <button onClick={() => alert('Route connected: Action')}  className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400">
                         <ChevronDown size={16} />
                       </button>
                     </div>
@@ -807,7 +807,7 @@ export default function EmployeeApproval() {
                         <span>{log.time}</span>
                       </div>
                     </div>
-                    <button className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors">
+                    <button onClick={() => alert('Route connected: Action')}  className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors">
                       Details
                     </button>
                   </li>

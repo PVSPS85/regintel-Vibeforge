@@ -18,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useNavigate } from 'react-router';
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
@@ -81,10 +82,10 @@ const TEAM_COMPLIANCE = [
 ];
 
 const RECENT_REGULATIONS = [
-  { title: 'Data Privacy Framework 2026', status: 'SENT', statusColor: 'text-green-700 bg-green-100' },
-  { title: 'Q3 AML Reporting Guidelines', status: 'REVIEW', statusColor: 'text-orange-700 bg-orange-100' },
-  { title: 'Cybersecurity Audit Memo', status: 'SENT', statusColor: 'text-green-700 bg-green-100' },
-  { title: 'Branch Ops Manual v4', status: 'REVIEW', statusColor: 'text-orange-700 bg-orange-100' },
+  { title: 'Data Privacy Framework 2026', status: 'SENT', statusColor: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20' },
+  { title: 'Q3 AML Reporting Guidelines', status: 'REVIEW', statusColor: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20' },
+  { title: 'Cybersecurity Audit Memo', status: 'SENT', statusColor: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20' },
+  { title: 'Branch Ops Manual v4', status: 'REVIEW', statusColor: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20' },
 ];
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -102,15 +103,15 @@ const MetricCard = ({
   colorClass: string;
   bgClass: string;
 }) => (
-  <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+  <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
     <div className="flex items-center justify-between mb-4">
       <div className={`w-10 h-10 rounded-lg ${bgClass} flex items-center justify-center ${colorClass}`}>
         {icon}
       </div>
     </div>
     <div>
-      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-      <p className="text-[13px] font-medium text-gray-500 mt-1">{title}</p>
+      <h3 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-600 tracking-tight">{value}</h3>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1">{title}</p>
     </div>
   </div>
 );
@@ -118,8 +119,10 @@ const MetricCard = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 font-sans bg-[#f9fafb] min-h-screen">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 font-sans min-h-screen">
       
       {/* ── Section A: Welcome Header ── */}
       <div className="flex flex-col gap-4">
@@ -185,7 +188,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Line Chart: Compliance Score Trend */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-lg p-6 rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
           <div className="mb-6 flex justify-between items-center">
             <div>
               <h3 className="text-base font-bold text-gray-900">Compliance Score Trend</h3>
@@ -232,7 +235,7 @@ const Dashboard = () => {
         </div>
 
         {/* Bar Chart: Monthly Task Volume */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white/80 backdrop-blur-lg p-6 rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
           <div className="mb-6 flex justify-between items-center">
             <div>
               <h3 className="text-base font-bold text-gray-900">Monthly Task Volume</h3>
@@ -272,10 +275,10 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Panel 1: Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
-            <button className="text-[13px] font-semibold text-blue-600 hover:text-blue-700">View All</button>
+            <button onClick={() => navigate('/notifications')} className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-all active:scale-95 cursor-pointer">View All</button>
           </div>
           <div className="space-y-5">
             {RECENT_ACTIVITY.map((item) => (
@@ -294,9 +297,10 @@ const Dashboard = () => {
         </div>
 
         {/* Panel 2: Team Compliance */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-bold text-gray-900">Team Compliance</h3>
+            <button onClick={() => navigate('/teams')} className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-all active:scale-95 cursor-pointer">View All</button>
           </div>
           <div className="space-y-6">
             {TEAM_COMPLIANCE.map((team) => (
@@ -314,10 +318,10 @@ const Dashboard = () => {
         </div>
 
         {/* Panel 3: Recent Regulations */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-bold text-gray-900">Recent Regulations</h3>
-            <button className="text-[13px] font-semibold text-blue-600 hover:text-blue-700">View All</button>
+            <button onClick={() => navigate('/regulations')} className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-all active:scale-95 cursor-pointer">View All</button>
           </div>
           <div className="space-y-4">
             {RECENT_REGULATIONS.map((reg, idx) => (

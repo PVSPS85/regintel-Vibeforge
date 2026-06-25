@@ -241,7 +241,7 @@ const Chats = () => {
 
         {/* Left Panel Content */}
         {activeView === 'Directory' ? (
-          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 custom-scrollbar">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="text-[12px] font-semibold text-gray-600">{onlineCount} online now</span>
@@ -270,7 +270,7 @@ const Chats = () => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
+          <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5 custom-scrollbar">
             {filteredConvs.map((conv) => {
               const isActive = conv.id === activeChatId;
               return (
@@ -319,7 +319,7 @@ const Chats = () => {
             </div>
 
             {/* Directory Grid */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredDir.map((emp) => (
                   <div key={emp.id} className="bg-white rounded-xl border border-[rgba(0,0,0,0.1)] shadow-sm p-5 hover:shadow-md transition-shadow">
@@ -342,7 +342,7 @@ const Chats = () => {
                         <Send size={14} />
                         Message
                       </button>
-                      <button className="w-9 h-9 border border-[rgba(0,0,0,0.1)] hover:bg-gray-50 text-gray-600 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                      <button onClick={() => alert('Route connected: Email Member')} className="w-9 h-9 border border-[rgba(0,0,0,0.1)] hover:bg-gray-50 text-gray-600 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0">
                         <Mail size={16} />
                       </button>
                     </div>
@@ -383,7 +383,7 @@ const Chats = () => {
             </div>
 
             {/* Chat Feed */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 custom-scrollbar">
               {messages.map((msg, idx) => {
                 const isMe = msg.senderId === 'me';
                 const prevMsg = idx > 0 ? messages[idx - 1] : null;
@@ -437,7 +437,7 @@ const Chats = () => {
             {/* Chat Input */}
             <div className="flex-shrink-0 bg-white border-t border-[rgba(0,0,0,0.05)] px-6 pt-4 pb-3">
               <div className="flex items-center gap-3 bg-[#f3f3f5] border border-[rgba(0,0,0,0.1)] rounded-full px-4 py-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-sm">
-                <button title="Attach file" className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1">
+                <button onClick={() => alert('Route connected: Attach File')} title="Attach file" className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1">
                   <Paperclip size={18} />
                 </button>
                 <input
@@ -448,7 +448,7 @@ const Chats = () => {
                   onKeyDown={handleKeyDown}
                   className="flex-1 bg-transparent text-[14px] text-gray-900 placeholder:text-gray-400 outline-none"
                 />
-                <button title="Emoji" className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1">
+                <button onClick={() => alert('Route connected: Emoji Picker')} title="Emoji" className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1">
                   <Smile size={18} />
                 </button>
                 <button

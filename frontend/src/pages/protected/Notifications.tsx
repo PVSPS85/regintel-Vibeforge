@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -169,6 +170,7 @@ const getAlertIcon = (type: AlertItem['type']) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const Notifications = () => {
+  const { isAdmin } = useAuth();
   const [approvals, setApprovals] = useState<ApprovalItem[]>(INITIAL_APPROVALS);
   const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
   const [activeTab, setActiveTab] = useState<'All' | 'Pending Approvals' | 'Updates & Alerts'>('All');
@@ -237,31 +239,33 @@ const Notifications = () => {
             }`}
         >
           All
-          {(pendingApprovalsCount > 0 || unreadAlertsCount > 0) && (
+          {(isAdmin && pendingApprovalsCount > 0 || unreadAlertsCount > 0) && (
             <span className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-gray-900 text-white shadow-xs">
-              {pendingApprovalsCount + unreadAlertsCount}
+              {(isAdmin ? pendingApprovalsCount : 0) + unreadAlertsCount}
             </span>
           )}
           {activeTab === 'All' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#030213]" />}
         </button>
 
-        <button
-          onClick={() => setActiveTab('Pending Approvals')}
-          className={`pb-4 px-1 text-[14px] font-semibold transition-all relative cursor-pointer flex items-center gap-2 ${activeTab === 'Pending Approvals'
-            ? 'text-gray-900 font-bold'
-            : 'text-gray-500 hover:text-gray-900'
-            }`}
-        >
-          Pending Approvals
-          {pendingApprovalsCount > 0 && (
-            <span className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-[#030213] text-white shadow-xs">
-              {pendingApprovalsCount}
-            </span>
-          )}
-          {activeTab === 'Pending Approvals' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#030213]" />
-          )}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('Pending Approvals')}
+            className={`pb-4 px-1 text-[14px] font-semibold transition-all relative cursor-pointer flex items-center gap-2 ${activeTab === 'Pending Approvals'
+              ? 'text-gray-900 font-bold'
+              : 'text-gray-500 hover:text-gray-900'
+              }`}
+          >
+            Pending Approvals
+            {pendingApprovalsCount > 0 && (
+              <span className="h-5 min-w-5 px-1.5 flex items-center justify-center text-[10px] font-bold rounded-full bg-[#030213] text-white shadow-xs">
+                {pendingApprovalsCount}
+              </span>
+            )}
+            {activeTab === 'Pending Approvals' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#030213]" />
+            )}
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('Updates & Alerts')}
@@ -285,7 +289,7 @@ const Notifications = () => {
       {/* ── Content Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Column 1: Pending Approvals */}
-        {(activeTab === 'All' || activeTab === 'Pending Approvals') && (
+        {isAdmin && (activeTab === 'All' || activeTab === 'Pending Approvals') && (
           <div className={`${activeTab === 'All' ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-4`}>
             <div className="flex items-center justify-between">
               <h2 className="text-[13px] font-bold uppercase text-gray-400 tracking-wider">
@@ -393,7 +397,7 @@ const Notifications = () => {
 
         {/* Column 2: Updates & Alerts */}
         {(activeTab === 'All' || activeTab === 'Updates & Alerts') && (
-          <div className={`${activeTab === 'All' ? 'lg:col-span-5' : 'lg:col-span-12'} space-y-4`}>
+          <div className={`${(isAdmin && activeTab === 'All') ? 'lg:col-span-5' : 'lg:col-span-12'} space-y-4`}>
             <h2 className="text-[13px] font-bold uppercase text-gray-400 tracking-wider">
               Updates & Alerts ({unreadAlertsCount} Unread)
             </h2>

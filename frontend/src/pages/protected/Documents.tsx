@@ -13,6 +13,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +129,7 @@ const getCategoryStyles = (category: string) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const Documents = () => {
+  const { isAdmin } = useAuth();
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -217,17 +219,19 @@ const Documents = () => {
             Repository of active banking regulations, RBI circulars, and branch policies.
           </p>
         </div>
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="inline-flex items-center gap-2 bg-[#030213] text-white hover:bg-opacity-95 active:scale-98 transition-all px-4 h-10 rounded-md text-[13px] font-semibold cursor-pointer shadow-sm self-start sm:self-center"
-        >
-          <Plus size={16} />
-          Upload Document
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-all px-4 h-10 rounded-md text-[13px] font-semibold cursor-pointer shadow-sm self-start sm:self-center"
+          >
+            <Plus size={16} />
+            Upload Document
+          </button>
+        )}
       </div>
 
       {/* ── Search & Filter Pill Options ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
         <div className="relative w-full md:max-w-md">
           <Search
             size={16}
@@ -249,7 +253,7 @@ const Documents = () => {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-[#030213] text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-[rgba(0,0,0,0.1)]'
               }`}
             >
@@ -260,7 +264,7 @@ const Documents = () => {
       </div>
 
       {/* ── Repository Table ── */}
-      <div className="bg-white rounded-md border border-[rgba(0,0,0,0.1)] shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
@@ -340,7 +344,7 @@ const Documents = () => {
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : downloadingId === doc.id
                               ? 'bg-gray-100 text-gray-400 border border-[rgba(0,0,0,0.1)] cursor-not-allowed'
-                              : 'bg-[#030213] text-white hover:bg-opacity-90 shadow-sm'
+                              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                           }`}
                         >
                           {downloadingId === doc.id ? (
@@ -500,7 +504,7 @@ const Documents = () => {
                         triggerDownload(selectedDoc.id);
                         setSelectedDoc(null);
                       }}
-                      className="px-4 py-2 bg-[#030213] text-white hover:bg-opacity-90 rounded-md text-[13px] font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md text-[13px] font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
                     >
                       <Download size={14} />
                       Download Document
@@ -667,7 +671,7 @@ const Documents = () => {
                 </button>
                 <button
                   onClick={handleUploadSubmit}
-                  className="px-4 py-2 bg-[#030213] text-white hover:bg-opacity-90 rounded-md text-[13px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md text-[13px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   Confirm Upload
                   <ArrowRight size={14} />

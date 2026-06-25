@@ -4,14 +4,17 @@ import {
   CheckSquare,
   ChevronRight,
   Clock,
+  Filter,
   Plus,
   Search,
+  ShieldCheck,
   UploadCloud,
   Users,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,10 +68,10 @@ const ALL_EMPLOYEES: Employee[] = [
 
 const getStatusColor = (status: Team['status']) => {
   switch (status) {
-    case 'High Compliance': return 'text-emerald-700 bg-emerald-50 border-emerald-100';
-    case 'Medium Compliance': return 'text-amber-700 bg-amber-50 border-amber-100';
-    case 'Needs Attention': return 'text-rose-700 bg-rose-50 border-rose-100';
-    default: return 'text-gray-700 bg-gray-50 border-gray-200';
+    case 'High Compliance': return 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-600/20';
+    case 'Medium Compliance': return 'text-amber-700 bg-amber-50 ring-1 ring-amber-600/20';
+    case 'Needs Attention': return 'text-rose-700 bg-rose-50 ring-1 ring-rose-600/20';
+    default: return 'text-gray-700 bg-gray-50 ring-1 ring-gray-600/20';
   }
 };
 
@@ -251,6 +254,7 @@ const CreateTeamModal = ({ onClose }: { onClose: () => void }) => {
 
 const Teams = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -275,20 +279,24 @@ const Teams = () => {
             <ArrowLeftRight size={15} />
             Request Branch Transfer
           </button>
-          <button
-            onClick={() => navigate('/regulations')}
-            className="h-10 px-4 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
-          >
-            <UploadCloud size={15} />
-            Upload Regulation
-          </button>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="h-10 px-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
-          >
-            <Plus size={16} />
-            Create Team
-          </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => navigate('/regulations')}
+                className="h-10 px-4 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-[13px] font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+              >
+                <UploadCloud size={15} />
+                Upload Regulation
+              </button>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="h-10 px-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus size={16} />
+                Create Team
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -300,9 +308,9 @@ const Teams = () => {
           { label: 'Total Pending', value: '40' },
           { label: 'Total Completed', value: '222' },
         ].map((metric, idx) => (
-          <div key={idx} className="bg-white rounded-xl border border-[rgba(0,0,0,0.05)] shadow-sm p-5">
-            <span className="text-3xl font-extrabold text-gray-900 tracking-tight">{metric.value}</span>
-            <p className="text-[13px] font-medium text-gray-500 mt-1">{metric.label}</p>
+          <div key={idx} className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
+            <span className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-600 tracking-tight">{metric.value}</span>
+            <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase mt-1">{metric.label}</p>
           </div>
         ))}
       </div>
@@ -324,7 +332,7 @@ const Teams = () => {
       {/* ── TEAMS GRID ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredTeams.map((team) => (
-          <div key={team.id} className="relative bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+          <div key={team.id} className="relative bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20 flex flex-col overflow-hidden">
 
             {team.score >= 90 && <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-emerald-500" />}
 
@@ -337,7 +345,7 @@ const Teams = () => {
                 <h2 className="text-lg font-bold text-gray-900 truncate">{team.name}</h2>
                 <p className="text-[13px] text-gray-500 mt-0.5">{team.name} · {team.location}</p>
                 <div className="mt-2">
-                  <span className={`px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider ${getStatusColor(team.status)}`}>
+                  <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${getStatusColor(team.status)}`}>
                     {team.status}
                   </span>
                 </div>
@@ -347,7 +355,7 @@ const Teams = () => {
             {/* Compliance Bar */}
             <div className="px-6 pb-4">
               <div className="flex justify-between mb-1.5">
-                <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Compliance Score</span>
+                <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Compliance Score</span>
                 <span className="text-[14px] font-bold text-gray-900">{team.score}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">

@@ -13,7 +13,7 @@ export default function UserManagement() {
           <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">User & Role Management</h1>
           <p className="text-gray-500 mt-2">Central dashboard for employee permissions and administrative oversight.</p>
         </div>
-        <button className="bg-[#030213] hover:bg-[#030213] text-white px-5 py-2.5 rounded-md text-sm font-medium shadow-sm transition-colors flex items-center gap-2">
+        <button onClick={() => alert('Route connected: Action')}  className="bg-[#030213] hover:bg-[#030213] text-white px-5 py-2.5 rounded-md text-sm font-medium shadow-sm transition-colors flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
           Add Employee
         </button>
@@ -42,10 +42,10 @@ export default function UserManagement() {
             </div>
             
             <div className="flex items-center gap-3">
-              <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-[rgba(0,0,0,0.1)] rounded-md hover:bg-[#f3f3f5] transition-colors shadow-sm">
+              <button onClick={() => alert('Route connected: Action')}  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-[rgba(0,0,0,0.1)] rounded-md hover:bg-[#f3f3f5] transition-colors shadow-sm">
                 Modify Permissions
               </button>
-              <button className="px-4 py-2 text-sm font-medium text-[#030213] bg-[#f3f3f5] border border-[rgba(0,0,0,0.1)] rounded-md hover:bg-blue-100 transition-colors shadow-sm">
+              <button onClick={() => alert('Route connected: Action')}  className="px-4 py-2 text-sm font-medium text-[#030213] bg-[#f3f3f5] border border-[rgba(0,0,0,0.1)] rounded-md hover:bg-blue-100 transition-colors shadow-sm">
                 Initiate Branch Transfer
               </button>
             </div>

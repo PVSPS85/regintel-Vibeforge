@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useAuth } from '../../contexts/AuthContext';
 import './Topbar.css';
 
 // ─── Route → Page title map ───────────────────────────────────────────────────
@@ -30,19 +31,6 @@ const ROUTE_TITLES: Record<string, string> = {
   '/admin/users':      'User Management',
   '/admin/compliance': 'Compliance Monitoring',
 };
-
-// ─── Mock user data (replace with auth context later) ────────────────────────
-
-const MOCK_USER = {
-  name:       'Arjun Mehta',
-  initials:   'AM',
-  branch:     'Mumbai — Fort',
-  role:       'Branch Manager' as 'Branch Manager' | 'System Admin' | 'Team Leader' | 'Employee',
-  unreadNotifications: 4,
-};
-
-// Role guard – show settings for manager/admin
-const isAdminRole = MOCK_USER.role === 'Branch Manager' || MOCK_USER.role === 'System Admin';
 
 // ─── Language options ─────────────────────────────────────────────────────────
 
@@ -152,8 +140,10 @@ const NotificationBell = ({ count }: { count: number }) => {
 
 /** User profile dropdown */
 const ProfileMenu = () => {
+  const { user: MOCK_USER } = useAuth();
   const [open, setOpen] = useState(false);
   const containerRef   = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useClickOutside(containerRef, () => setOpen(false));
 
@@ -221,8 +211,8 @@ const ProfileMenu = () => {
           </li>
           <li role="separator" className="tb-dropdown__sep" />
           <li role="menuitem" className="tb-dropdown__item tb-dropdown__item--danger" tabIndex={0}
-            onClick={() => setOpen(false)}
-            onKeyDown={(e) => { if (e.key === 'Enter') setOpen(false); }}
+            onClick={() => { setOpen(false); localStorage.clear(); navigate('/login'); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setOpen(false); localStorage.clear(); navigate('/login'); } }}
           >
             <LogOut size={15} aria-hidden="true" />
             Sign out
@@ -254,19 +244,20 @@ const SettingsButton = () => {
 
 const Topbar = () => {
   const pageTitle = usePageTitle();
+  const { isAdmin, toggleRole, user } = useAuth();
 
   return (
     <header className="topbar" role="banner">
       {/* ── Left: title ── */}
-      <div className="topbar__left">
+      <div className="topbar__left flex items-center gap-4">
         <h1 className="topbar__title">{pageTitle}</h1>
       </div>
 
       {/* ── Right: controls cluster ── */}
       <div className="topbar__right" role="group" aria-label="Global controls">
         <LangPicker />
-        {isAdminRole && <SettingsButton />}
-        <NotificationBell count={MOCK_USER.unreadNotifications} />
+        {isAdmin && <SettingsButton />}
+        <NotificationBell count={user.unreadNotifications} />
         <div className="topbar__divider" aria-hidden="true" />
         <ProfileMenu />
       </div>
