@@ -13,7 +13,8 @@ from app import (
     notifications,
     regulations,
     admin,
-    discussions
+    discussions,
+    dashboard
 )
 
 # 1. Initialize the FastAPI application
@@ -42,6 +43,7 @@ app.include_router(notifications.router)
 app.include_router(regulations.router)
 app.include_router(admin.router)
 app.include_router(discussions.router)
+app.include_router(dashboard.router)
 
 # 4. Basic Health Check Endpoint
 @app.get("/")
