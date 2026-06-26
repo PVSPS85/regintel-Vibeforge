@@ -1,7 +1,8 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,9 @@ const FEATURES = [
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const {
     register,
@@ -43,10 +46,15 @@ const Login = () => {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ mode: 'onTouched' });
 
-  const onSubmit = async (_data: LoginFormValues) => {
-    // Simulate async auth — replace with real API call
-    await new Promise((r) => setTimeout(r, 800));
-    navigate('/dashboard');
+  const onSubmit = async (data: LoginFormValues) => {
+    setAuthError(null);
+    try {
+      await login(data.email, data.password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      const msg = err.response?.data?.detail ?? 'Unable to sign in. Please verify your credentials.';
+      setAuthError(msg);
+    }
   };
 
   return (
@@ -145,6 +153,14 @@ const Login = () => {
             </p>
           </div>
 
+          {/* Global Auth Error Banner */}
+          {authError && (
+            <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2.5 text-red-700 text-sm font-medium animate-in fade-in duration-200">
+              <AlertCircle size={18} className="shrink-0 text-red-600" />
+              <span>{authError}</span>
+            </div>
+          )}
+
           {/* Form */}
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -204,7 +220,7 @@ const Login = () => {
                 </label>
                 <button
                   type="button"
-                  onClick={() => alert('Route connected: Forgot Password')}
+                  onClick={() => alert('Please contact your Branch Administrator to reset your password.')}
                   className="text-[12px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                 >
                   Forgot password?
@@ -230,14 +246,13 @@ const Login = () => {
                   `}
                   {...register('password', {
                     required: 'Password is required.',
-                    minLength: { value: 6, message: 'Password must be at least 6 characters.' },
                   })}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 >
                   {showPassword
                     ? <EyeOff size={16} aria-hidden="true" />
@@ -258,7 +273,7 @@ const Login = () => {
               disabled={isSubmitting}
               className="
                 w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700
-                flex items-center justify-center gap-2
+                flex items-center justify-center gap-2 cursor-pointer
                 transition-[opacity,transform,background-color] duration-150
                 disabled:opacity-60 disabled:cursor-not-allowed
                 active:scale-[0.985]

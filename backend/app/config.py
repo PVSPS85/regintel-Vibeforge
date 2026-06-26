@@ -18,5 +18,8 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
     GEMINI_API_KEY: str
+    AI_PROVIDER: str = "gemini"  # "gemini" or "local" (e.g., Ollama)
+    AI_AGENTS_SERVICE_URL: str = "http://127.0.0.1:8001"
+    LOCAL_AI_BASE_URL: str = "http://127.0.0.1:11434"
 
 settings = Settings()

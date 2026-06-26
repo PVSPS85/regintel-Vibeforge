@@ -1,7 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 
-// Layout wrapper
+// Layout & Auth wrappers
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Public pages
 import Login from './pages/public/Login';
@@ -64,30 +65,32 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/request-access" element={<RequestAccess />} />
 
-        {/* ── Protected + Admin routes (wrapped by Layout) ── */}
-        <Route element={<Layout />}>
-          {/* Protected – core workspace */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/chats" element={<Chats />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/teams/:teamId" element={<TeamDetails />} />
-          <Route path="/teams/:teamId/workspace" element={<TeamWorkspace />} />
-          <Route path="/team-workspace" element={<TeamWorkspace />} />
-          <Route path="/task-detail" element={<TaskDetail />} />
-          <Route path="/action-points" element={<ActionPoints />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/discussions" element={<Discussions />} />
-          <Route path="/directory" element={<Directory />} />
-          <Route path="/notifications" element={<Notifications />} />
+        {/* ── Protected + Admin routes (wrapped by ProtectedRoute + Layout) ── */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            {/* Protected – core workspace */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/chats" element={<Chats />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/teams/:teamId" element={<TeamDetails />} />
+            <Route path="/teams/:teamId/workspace" element={<TeamWorkspace />} />
+            <Route path="/team-workspace" element={<TeamWorkspace />} />
+            <Route path="/task-detail" element={<TaskDetail />} />
+            <Route path="/action-points" element={<ActionPoints />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/discussions" element={<Discussions />} />
+            <Route path="/directory" element={<Directory />} />
+            <Route path="/notifications" element={<Notifications />} />
 
-          {/* Protected – new pages */}
-          <Route path="/regulations" element={<Regulations />} />
-          <Route path="/branch-transfer" element={<BranchTransfer />} />
+            {/* Protected – new pages */}
+            <Route path="/regulations" element={<Regulations />} />
+            <Route path="/branch-transfer" element={<BranchTransfer />} />
 
-          {/* Admin pages */}
-          <Route path="/admin/approvals" element={<EmployeeApproval />} />
-          <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/compliance" element={<ComplianceOversight />} />
+            {/* Admin pages */}
+            <Route path="/admin/approvals" element={<EmployeeApproval />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/compliance" element={<ComplianceOversight />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

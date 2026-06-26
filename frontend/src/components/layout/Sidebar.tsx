@@ -60,7 +60,18 @@ const SidebarLink = ({
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { user: SESSION, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+
+  const fallbackUser = {
+    name: 'Workspace User',
+    empId: 'EMP-001',
+    role: 'Employee',
+    branch: 'HQ',
+    branchFull: 'Head Office',
+    initials: 'WU',
+  };
+
+  const SESSION = user ?? fallbackUser;
 
   return (
     <aside className="w-64 h-screen bg-white/60 backdrop-blur-xl border-r border-white/40 flex flex-col font-sans shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
@@ -128,7 +139,6 @@ export default function Sidebar() {
         </div>
         <button
           onClick={() => {
-            // Clear any mock auth state here if applicable
             localStorage.clear();
             navigate('/login');
           }}

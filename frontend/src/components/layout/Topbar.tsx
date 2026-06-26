@@ -43,16 +43,13 @@ const LANGUAGES = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Derive a clean page title from the current pathname */
 function usePageTitle(): string {
   const { pathname } = useLocation();
-  // exact match first, then prefix match for nested routes
   if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
   const prefix = Object.keys(ROUTE_TITLES).find((k) => pathname.startsWith(k));
   return prefix ? ROUTE_TITLES[prefix] : 'RegIntel';
 }
 
-/** Close a dropdown when the user clicks outside the given ref */
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -67,7 +64,6 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () =
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Language / region picker */
 const LangPicker = () => {
   const [open, setOpen]   = useState(false);
   const [lang, setLang]   = useState('en');
@@ -117,7 +113,6 @@ const LangPicker = () => {
   );
 };
 
-/** Notification bell with live badge counter */
 const NotificationBell = ({ count }: { count: number }) => {
   const navigate = useNavigate();
   const capped = Math.min(count, 99);
@@ -138,21 +133,28 @@ const NotificationBell = ({ count }: { count: number }) => {
   );
 };
 
-/** User profile dropdown */
 const ProfileMenu = () => {
-  const { user: MOCK_USER } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const containerRef   = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useClickOutside(containerRef, () => setOpen(false));
 
-  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  const fallbackUser = {
+    name: 'Workspace User',
+    role: 'Employee',
+    branch: 'HQ',
+    initials: 'WU',
+  };
+
+  const MOCK_USER = user ?? fallbackUser;
 
   return (
     <div className="tb-profile" ref={containerRef}>
@@ -164,12 +166,10 @@ const ProfileMenu = () => {
         aria-label={`Profile menu for ${MOCK_USER.name}`}
         onClick={() => setOpen((v) => !v)}
       >
-        {/* Avatar */}
         <span className="tb-profile__avatar" aria-hidden="true">
           {MOCK_USER.initials}
         </span>
 
-        {/* Name + branch */}
         <span className="tb-profile__meta">
           <span className="tb-profile__name">{MOCK_USER.name}</span>
           <span className="tb-profile__branch">{MOCK_USER.branch}</span>
@@ -188,7 +188,6 @@ const ProfileMenu = () => {
           role="menu"
           aria-labelledby="tb-profile-btn"
         >
-          {/* Info header */}
           <li className="tb-dropdown__header" role="presentation">
             <span className="tb-dropdown__user-name">{MOCK_USER.name}</span>
             <span className="tb-dropdown__user-role">{MOCK_USER.role}</span>
@@ -223,8 +222,6 @@ const ProfileMenu = () => {
   );
 };
 
-// ─── Settings Button (admin/manager only) ─────────────────────────────────────
-
 const SettingsButton = () => {
   const navigate = useNavigate();
   return (
@@ -240,24 +237,20 @@ const SettingsButton = () => {
   );
 };
 
-// ─── Topbar ───────────────────────────────────────────────────────────────────
-
 const Topbar = () => {
   const pageTitle = usePageTitle();
   const { isAdmin, user } = useAuth();
 
   return (
     <header className="topbar" role="banner">
-      {/* ── Left: title ── */}
       <div className="topbar__left flex items-center gap-4">
         <h1 className="topbar__title">{pageTitle}</h1>
       </div>
 
-      {/* ── Right: controls cluster ── */}
       <div className="topbar__right" role="group" aria-label="Global controls">
         <LangPicker />
         {isAdmin && <SettingsButton />}
-        <NotificationBell count={user.unreadNotifications} />
+        <NotificationBell count={user?.unreadNotifications ?? 0} />
         <div className="topbar__divider" aria-hidden="true" />
         <ProfileMenu />
       </div>

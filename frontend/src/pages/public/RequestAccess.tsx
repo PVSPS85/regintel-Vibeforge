@@ -1,6 +1,7 @@
-import { CheckCircle2, Clock, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import api from '../../lib/api';
 
 // ─── Feature bullet points (left panel) ──────────────────────────────────────
 
@@ -28,14 +29,47 @@ const FEATURES = [
 const RequestAccess = () => {
   const navigate = useNavigate();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Form fields
+  const [fullName, setFullName] = useState('');
+  const [empId, setEmpId] = useState('');
+  const [email, setEmail] = useState('');
   const [branchCode, setBranchCode] = useState('');
+  const [department, setDepartment] = useState('');
+  const [selectedRole, setSelectedRole] = useState('Employee');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // UI states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('Employee');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setErrorMsg(null);
+
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await api.post('/auth/request-access', {
+        name: fullName,
+        email: email,
+        password: password,
+        branch_code: branchCode.trim(),
+      });
+      setIsSubmitted(true);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail ?? 'Failed to submit access request. Verify your branch code.';
+      setErrorMsg(detail);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -136,6 +170,13 @@ const RequestAccess = () => {
                 </p>
               </div>
 
+              {errorMsg && (
+                <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2.5 text-red-700 text-sm font-medium">
+                  <AlertCircle size={18} className="shrink-0 text-red-600" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Row 1 */}
@@ -147,6 +188,9 @@ const RequestAccess = () => {
                     <input
                       required
                       type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Arjun Mehta"
                       className="w-full h-11 px-4 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                     />
                   </div>
@@ -157,6 +201,9 @@ const RequestAccess = () => {
                     <input
                       required
                       type="text"
+                      value={empId}
+                      onChange={(e) => setEmpId(e.target.value)}
+                      placeholder="EMP-102"
                       className="w-full h-11 px-4 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                     />
                   </div>
@@ -170,6 +217,9 @@ const RequestAccess = () => {
                   <input
                     required
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="arjun@bank.com"
                     className="w-full h-11 px-4 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   />
                 </div>
@@ -184,12 +234,13 @@ const RequestAccess = () => {
                     type="text"
                     value={branchCode}
                     onChange={(e) => setBranchCode(e.target.value)}
+                    placeholder="BR-MUM-001"
                     className="w-full h-11 px-4 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   />
-                  {branchCode.length > 3 && (
+                  {branchCode.length >= 8 && (
                     <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium">
                       <CheckCircle2 size={16} />
-                      Bengaluru — MG Road Branch
+                      Valid Seeded Branch Format Detected
                     </div>
                   )}
                 </div>
@@ -202,8 +253,9 @@ const RequestAccess = () => {
                   <div className="relative">
                     <select
                       required
-                      defaultValue=""
-                      className="w-full h-11 px-4 pr-10 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 appearance-none"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      className="w-full h-11 px-4 pr-10 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 appearance-none cursor-pointer"
                     >
                       <option value="" disabled>Select department...</option>
                       <option value="compliance">Compliance</option>
@@ -290,12 +342,14 @@ const RequestAccess = () => {
                       <input
                         required
                         type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="w-full h-11 px-4 pr-11 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -309,12 +363,14 @@ const RequestAccess = () => {
                       <input
                         required
                         type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full h-11 px-4 pr-11 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -325,9 +381,10 @@ const RequestAccess = () => {
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all mt-6 active:scale-[0.985]"
+                  disabled={isLoading}
+                  className="w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all mt-6 active:scale-[0.985] disabled:opacity-60 cursor-pointer"
                 >
-                  Request Branch Access
+                  {isLoading ? 'Submitting Request...' : 'Request Branch Access'}
                 </button>
               </form>
 
@@ -352,7 +409,7 @@ const RequestAccess = () => {
                   Awaiting Branch Manager Approval
                 </h2>
                 <p className="text-[14px] text-gray-500 max-w-[340px] mx-auto leading-relaxed">
-                  Your access request has been securely logged. You will receive an email once your branch manager approves your role.
+                  Your access request has been securely logged in PostgreSQL. You will receive access once your branch manager approves your role.
                 </p>
               </div>
 
@@ -367,21 +424,21 @@ const RequestAccess = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Employee ID</p>
-                      <p className="text-[14px] text-gray-900 font-semibold">EMP-4921</p>
+                      <p className="text-[14px] text-gray-900 font-semibold">{empId || 'EMP-102'}</p>
                     </div>
                     <div>
                       <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Department</p>
-                      <p className="text-[14px] text-gray-900 font-semibold capitalize">{selectedRole === 'Auditor' ? 'Internal Audit' : 'Compliance'}</p>
+                      <p className="text-[14px] text-gray-900 font-semibold capitalize">{department || 'Compliance'}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Branch ID</p>
-                      <p className="text-[14px] text-gray-900 font-semibold">{branchCode.length > 3 ? branchCode.toUpperCase() : 'XYAH'}</p>
+                      <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Branch Code</p>
+                      <p className="text-[14px] text-gray-900 font-semibold">{branchCode || 'BR-MUM-001'}</p>
                     </div>
                     <div>
-                      <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Branch Name</p>
-                      <p className="text-[14px] text-gray-900 font-semibold truncate" title="Bengaluru — MG Road">Bengaluru — MG Road</p>
+                      <p className="text-[12px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Requested Role</p>
+                      <p className="text-[14px] text-gray-900 font-semibold">{selectedRole}</p>
                     </div>
                   </div>
                 </div>
@@ -389,9 +446,9 @@ const RequestAccess = () => {
 
               <button
                 onClick={() => navigate('/login')}
-                className="w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all mt-4 active:scale-[0.985]"
+                className="w-full h-11 rounded-md text-[14px] font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all mt-4 active:scale-[0.985] cursor-pointer"
               >
-                Continue to Workspace
+                Return to Login
               </button>
             </div>
           )}
