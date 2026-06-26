@@ -1,0 +1,54 @@
+# ==============================================================================
+# Supabase Project Configuration
+# Project:  RegIntel by Vibeforge
+# Purpose:  Master infrastructure configuration governing the API gateway,
+#           authentication rules, local database, and Realtime CDC parameters.
+# ==============================================================================
+
+project_id = "regintel-banking-workspace"
+
+
+# ------------------------------------------------------------------------------
+# [api] — PostgREST API gateway settings.
+# Exposes the public and storage schemas over the local REST interface.
+# extra_search_path ensures the uuid-ossp extension functions and public helpers
+# are resolvable without schema-qualifying every call.
+# ------------------------------------------------------------------------------
+[api]
+port              = 54321
+schemas           = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+
+
+# ------------------------------------------------------------------------------
+# [auth] — GoTrue authentication engine settings.
+# Strict identity policies aligned with RegIntel's Master Bible security rules:
+#   - Sign-up is open so Branch Admins can onboard new employees through the app.
+#   - Anonymous sign-in is disabled — all users must hold a verified identity.
+#   - Email confirmation is mandatory — no unverified accounts may access data.
+#   - Minimum password length of 8 characters enforces baseline credential hygiene.
+# ------------------------------------------------------------------------------
+[auth]
+enable_signup             = true
+enable_anonymous_sign_ins = false
+minimum_password_length   = 8
+
+[auth.email]
+enable_confirmations      = true
+
+
+# ------------------------------------------------------------------------------
+# [db] — Local PostgreSQL instance settings.
+# Port 54322 is the standard Supabase CLI local database port, kept separate
+# from the API gateway port to allow direct psql access during development.
+# ------------------------------------------------------------------------------
+[db]
+port = 54322
+
+
+# ------------------------------------------------------------------------------
+# [realtime] — Supabase Realtime CDC synchronisation settings.
+# ------------------------------------------------------------------------------
+[realtime]
+# max_channels is handled dynamically in newer versions of the CLI/Realtime engine.
+
