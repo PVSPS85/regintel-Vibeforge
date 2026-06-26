@@ -23,6 +23,7 @@ class RegulationResponse(BaseModel):
     id: UUID
     title: str
     uploaded_by: UUID
+    status: str = "PROCESSING"
     created_at: datetime
 
     class Config:
@@ -33,6 +34,7 @@ class RAGQuery(BaseModel):
 
 class WebhookTaskCreate(BaseModel):
     branch_id: str
+    regulation_id: Optional[str] = None
     tasks: List[Dict[str, Any]]
 
 
@@ -47,15 +49,18 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
     try:
         ai_service = get_ai_service()
         # Execute async AI pipeline dispatch
-        result = asyncio.run(ai_service.process_regulation_pipeline(file_path, branch_id_str))
+        result = asyncio.run(ai_service.process_regulation_pipeline(file_path, branch_id_str, str(regulation_id)))
         tasks_list = result.get("tasks", [])
+
+        # Prevent duplicate insertion if webhook seeded first
+        existing_count = db.query(models.Task).filter(models.Task.regulation_id == regulation_id).count()
 
         branch_uuid = UUID(branch_id_str) if branch_id_str else None
         if not branch_uuid:
             first_b = db.query(models.Branch).first()
             branch_uuid = first_b.id if first_b else None
 
-        if branch_uuid and tasks_list:
+        if branch_uuid and tasks_list and existing_count == 0:
             for t in tasks_list:
                 dept_name = t.get("department", "Compliance")
                 team = db.query(models.Team).filter(
@@ -75,15 +80,27 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
                     description=t.get("description", "Automated compliance obligation extracted via CrewAI"),
                     branch_id=branch_uuid,
                     assigned_to_team=team_id,
+                    regulation_id=regulation_id,
                     status=models.TaskStatus.PENDING,
                     priority=prio_enum,
                     due_date=due_date
                 )
                 db.add(new_task)
-            db.commit()
             logger.info(f"[RegIntel AI Worker] Successfully seeded {len(tasks_list)} tasks into Supabase DB.")
+
+        reg = db.query(models.Regulation).filter(models.Regulation.id == regulation_id).first()
+        if reg:
+            reg.status = "PROCESSED"
+        db.commit()
     except Exception as e:
         logger.error(f"[RegIntel AI Worker Error] Pipeline ingestion failed: {e}")
+        try:
+            reg = db.query(models.Regulation).filter(models.Regulation.id == regulation_id).first()
+            if reg:
+                reg.status = "FAILED"
+            db.commit()
+        except Exception:
+            pass
     finally:
         db.close()
 
@@ -128,7 +145,8 @@ def upload_regulation(
     new_regulation = models.Regulation(
         title=final_title,
         file_path=file_path,
-        uploaded_by=current_user.id
+        uploaded_by=current_user.id,
+        status="PROCESSING"
     )
     
     db.add(new_regulation)
@@ -140,6 +158,11 @@ def upload_regulation(
     
     return new_regulation
 
+
+# ── STATIC PATHS MUST COME BEFORE /{id} PARAMETERIZED ROUTES ─────────────────
+# FastAPI matches routes in registration order. Any static path like
+# /internal-webhook-tasks or /rag-query would be swallowed by /{id} if
+# the parameterized routes were registered first.
 
 @router.post("/internal-webhook-tasks", status_code=status.HTTP_201_CREATED)
 def internal_webhook_create_tasks(
@@ -158,26 +181,48 @@ def internal_webhook_create_tasks(
     if not branch_uuid:
         return {"status": "ignored", "reason": "No valid branch"}
 
-    for t in payload.tasks:
-        dept_name = t.get("department", "Compliance")
-        team = db.query(models.Team).filter(
-            models.Team.branch_id == branch_uuid,
-            models.Team.name.ilike(f"%{dept_name}%")
-        ).first()
-        team_id = team.id if team else None
+    reg_uuid = None
+    if payload.regulation_id:
+        try:
+            reg_uuid = UUID(payload.regulation_id)
+        except Exception:
+            pass
 
-        prio_str = str(t.get("priority", "Medium")).upper()
-        prio_enum = getattr(models.TaskPriority, prio_str, models.TaskPriority.MEDIUM)
+    existing_count = 0
+    if reg_uuid:
+        existing_count = db.query(models.Task).filter(models.Task.regulation_id == reg_uuid).count()
 
-        new_t = models.Task(
-            title=t.get("title", "Regulatory Action Item"),
-            description=t.get("description", "Extracted via AI Webhook"),
-            branch_id=branch_uuid,
-            assigned_to_team=team_id,
-            status=models.TaskStatus.PENDING,
-            priority=prio_enum
-        )
-        db.add(new_t)
+    if existing_count == 0:
+        for t in payload.tasks:
+            dept_name = t.get("department", "Compliance")
+            team = db.query(models.Team).filter(
+                models.Team.branch_id == branch_uuid,
+                models.Team.name.ilike(f"%{dept_name}%")
+            ).first()
+            team_id = team.id if team else None
+
+            prio_str = str(t.get("priority", "Medium")).upper()
+            prio_enum = getattr(models.TaskPriority, prio_str, models.TaskPriority.MEDIUM)
+
+            due_days = int(t.get("due_days", 14))
+            due_date = datetime.utcnow().date() + timedelta(days=due_days)
+
+            new_t = models.Task(
+                title=t.get("title", "Regulatory Action Item"),
+                description=t.get("description", "Extracted via AI Webhook"),
+                branch_id=branch_uuid,
+                assigned_to_team=team_id,
+                regulation_id=reg_uuid,
+                status=models.TaskStatus.PENDING,
+                priority=prio_enum,
+                due_date=due_date
+            )
+            db.add(new_t)
+
+    if reg_uuid:
+        reg = db.query(models.Regulation).filter(models.Regulation.id == reg_uuid).first()
+        if reg:
+            reg.status = "PROCESSED"
     db.commit()
     return {"status": "success", "tasks_seeded": len(payload.tasks)}
 
@@ -192,3 +237,41 @@ def rag_query(
     """
     ai_service = get_ai_service()
     return asyncio.run(ai_service.rag_query(query_data.query))
+
+
+# ── PARAMETERIZED ROUTES LAST ─────────────────────────────────────────────────
+
+@router.get("/{id}", response_model=RegulationResponse)
+def get_regulation(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """Returns status of a specific regulation for frontend visual tracking."""
+    reg = db.query(models.Regulation).filter(models.Regulation.id == id).first()
+    if not reg:
+        raise HTTPException(status_code=404, detail="Regulation not found")
+    return reg
+
+
+@router.get("/{id}/tasks")
+def get_regulation_tasks(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """Returns extracted compliance tasks seeded for this regulatory circular."""
+    tasks = db.query(models.Task).filter(models.Task.regulation_id == id).all()
+    res = []
+    for t in tasks:
+        team_name = t.assigned_team.name if t.assigned_team else "Compliance"
+        res.append({
+            "id": str(t.id),
+            "title": t.title,
+            "description": t.description,
+            "department": team_name,
+            "priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+            "due_date": t.due_date.strftime("%b %d") if t.due_date else "Jul 10"
+        })
+    return res
+

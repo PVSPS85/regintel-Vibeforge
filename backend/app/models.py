@@ -103,6 +103,7 @@ class Task(Base):
     assigned_to_user = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     assigned_to_team = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
     branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id"), nullable=False)
+    regulation_id = Column(UUID(as_uuid=True), ForeignKey("regulations.id", ondelete="SET NULL"), nullable=True)
     status = Column(Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
     priority = Column(Enum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False)
     due_date = Column(Date, nullable=True)
@@ -113,6 +114,7 @@ class Task(Base):
     assigned_user = relationship("User", foreign_keys=[assigned_to_user], back_populates="assigned_tasks")
     assigned_team = relationship("Team", foreign_keys=[assigned_to_team], back_populates="tasks")
     branch = relationship("Branch", foreign_keys=[branch_id], back_populates="tasks")
+    regulation = relationship("Regulation")
 
 class TransferRequest(Base):
     __tablename__ = "transfer_requests"
@@ -179,6 +181,7 @@ class Regulation(Base):
     title = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    status = Column(String, default="PROCESSING")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     uploader = relationship("User")

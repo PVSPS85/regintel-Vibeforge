@@ -21,8 +21,8 @@ async def get_current_user(
     )
     
     try:
-        # Pydantic's SecretStr requires .get_secret_value() to get the actual string
-        secret_key = settings.SECRET_KEY.get_secret_value()
+        # SECRET_KEY is a plain str in config.py (not SecretStr)
+        secret_key = settings.SECRET_KEY if isinstance(settings.SECRET_KEY, str) else settings.SECRET_KEY.get_secret_value()
         payload = jwt.decode(token, secret_key, algorithms=[settings.ALGORITHM])
         
         # We assume the JWT payload contains the 'user_id'

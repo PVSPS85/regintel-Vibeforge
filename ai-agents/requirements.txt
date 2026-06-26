@@ -19,3 +19,6 @@ pydantic==2.7.4
 
 # For safely reading local environment credentials and API keys
 python-dotenv==1.0.1
+
+# For async HTTP webhook callbacks to the FastAPI backend
+httpx>=0.27.0

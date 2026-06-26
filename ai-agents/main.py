@@ -151,6 +151,10 @@ class RegulationRequest(BaseModel):
         default=None,
         description="Optional target branch UUID for webhook seeding."
     )
+    regulation_id: Optional[str] = Field(
+        default=None,
+        description="Optional target regulation UUID linking tasks to uploaded circular."
+    )
 
     @field_validator("raw_text", mode="after")
     @classmethod
@@ -445,10 +449,13 @@ def process_regulation(payload: RegulationRequest) -> RegulationResponse:
 
     if payload.branch_id:
         try:
-            webhook_payload = json.dumps({
+            w_data = {
                 "branch_id": payload.branch_id,
                 "tasks": extracted_tasks
-            }).encode("utf-8")
+            }
+            if payload.regulation_id:
+                w_data["regulation_id"] = payload.regulation_id
+            webhook_payload = json.dumps(w_data).encode("utf-8")
             req = urllib.request.Request(
                 "http://127.0.0.1:8000/regulations/internal-webhook-tasks",
                 data=webhook_payload,

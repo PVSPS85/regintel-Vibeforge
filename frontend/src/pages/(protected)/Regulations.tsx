@@ -98,6 +98,7 @@ const Regulations = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [progress, setProgress] = useState(0);
+  const [actionPoints, setActionPoints] = useState(ACTION_POINTS);
 
   const triggerUpload = () => {
     if (fileInputRef.current) {
@@ -116,17 +117,52 @@ const Regulations = () => {
     formData.append('title', file.name);
 
     try {
-      setProgress(45);
-      await api.post('/regulations/upload', formData, {
+      setProgress(35);
+      const res = await api.post('/regulations/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setProgress(85);
+      const regId = res.data?.id;
+
+      let currentProg = 35;
+      const pollInterval = setInterval(async () => {
+        currentProg = Math.min(currentProg + 15, 92);
+        setProgress(currentProg);
+        if (regId) {
+          try {
+            const stRes = await api.get(`/regulations/${regId}`);
+            const status = stRes.data?.status;
+            if (status === 'PROCESSED' || status === 'COMPLETED') {
+              clearInterval(pollInterval);
+              try {
+                const tasksRes = await api.get(`/regulations/${regId}/tasks`);
+                if (tasksRes.data && tasksRes.data.length > 0) {
+                  const mappedActions = tasksRes.data.map((t: any, idx: number) => ({
+                    id: idx + 1,
+                    text: t.title + (t.description ? ` — ${t.description}` : ''),
+                    team: t.department || 'Compliance',
+                    due: t.due_date || 'Jul 10'
+                  }));
+                  setActionPoints(mappedActions);
+                }
+              } catch (err) {}
+              setProgress(100);
+              setView('analyzed');
+            } else if (status === 'FAILED') {
+              clearInterval(pollInterval);
+              setProgress(100);
+              setView('analyzed');
+            }
+          } catch (err) {}
+        }
+      }, 1500);
+
+      // Safety fallback timeout
       setTimeout(() => {
+        clearInterval(pollInterval);
         setProgress(100);
         setView('analyzed');
-      }, 800);
+      }, 12000);
     } catch (e) {
-      // Gracefully finish visual pipeline progression for demo consistency
       setProgress(90);
       setTimeout(() => {
         setProgress(100);
@@ -448,11 +484,11 @@ Rules, 2005, it has been decided to amend the Master Direction on KYC...`}
             <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
               <div className="flex items-center gap-2 mb-6">
                 <Zap size={18} className="text-blue-600" />
-                <h4 className="text-[13px] font-bold text-gray-900">Generated Action Points ({ACTION_POINTS.length})</h4>
+                <h4 className="text-[13px] font-bold text-gray-900">Generated Action Points ({actionPoints.length})</h4>
               </div>
               
               <div className="space-y-4">
-                {ACTION_POINTS.map(action => (
+                {actionPoints.map(action => (
                   <div key={action.id} className="flex items-start gap-4 p-4 border border-gray-100 hover:border-gray-200 rounded-xl bg-gray-50/50 transition-colors">
                     <div className="w-6 h-6 rounded-full border border-gray-200 bg-white flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0 mt-0.5">
                       {action.id}

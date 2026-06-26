@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.database import engine, Base
 
 # Import all of our routers
@@ -54,3 +55,11 @@ def read_root():
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE regulations ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'PROCESSING'"))
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS regulation_id UUID REFERENCES regulations(id) ON DELETE SET NULL"))
+            conn.commit()
+        except Exception as e:
+            # Table or dialect might not support IF NOT EXISTS or column already exists
+            pass

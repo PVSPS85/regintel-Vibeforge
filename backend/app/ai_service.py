@@ -30,7 +30,7 @@ class AIServiceInterface(ABC):
         pass
 
     @abstractmethod
-    async def process_regulation_pipeline(self, file_path: str, branch_id: str) -> dict:
+    async def process_regulation_pipeline(self, file_path: str, branch_id: str, regulation_id: str = "") -> dict:
         """Dispatches PDF file to microservice to extract obligations and generate tasks."""
         pass
 
@@ -65,14 +65,17 @@ class GeminiCrewAIService(AIServiceInterface):
             "sources": ["RBI Master Direction 2024"]
         }
 
-    async def process_regulation_pipeline(self, file_path: str, branch_id: str) -> dict:
+    async def process_regulation_pipeline(self, file_path: str, branch_id: str, regulation_id: str = "") -> dict:
         abs_path = os.path.abspath(file_path)
-        logger.info(f"[GeminiCrewAIService] Dispatching PDF {abs_path} for branch {branch_id} to {self.base_url}...")
+        logger.info(f"[GeminiCrewAIService] Dispatching PDF {abs_path} for branch {branch_id} (reg: {regulation_id}) to {self.base_url}...")
         async with httpx.AsyncClient(timeout=180.0) as client:
             try:
+                payload = {"file_path": abs_path, "branch_id": branch_id}
+                if regulation_id:
+                    payload["regulation_id"] = regulation_id
                 response = await client.post(
                     f"{self.base_url}/api/v1/process-regulation",
-                    json={"file_path": abs_path, "branch_id": branch_id}
+                    json=payload
                 )
                 response.raise_for_status()
                 return response.json()
@@ -120,8 +123,8 @@ class LocalOfflineAIService(AIServiceInterface):
             "sources": ["Local Cache / Offline Database"]
         }
 
-    async def process_regulation_pipeline(self, file_path: str, branch_id: str) -> dict:
-        logger.info(f"[LocalOfflineAIService] Processing PDF pipeline offline for branch {branch_id}...")
+    async def process_regulation_pipeline(self, file_path: str, branch_id: str, regulation_id: str = "") -> dict:
+        logger.info(f"[LocalOfflineAIService] Processing PDF pipeline offline for branch {branch_id} (reg: {regulation_id})...")
         # Offline deterministic extraction
         sample_tasks = [
             {"title": "Update Video-CIP architecture per technical specification", "department": "IT Security", "priority": "High", "due_days": 15},
