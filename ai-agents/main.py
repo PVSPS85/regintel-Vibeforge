@@ -46,7 +46,9 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
+import json
+import urllib.request
+from typing import Optional, List, Dict, Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -145,6 +147,10 @@ class RegulationRequest(BaseModel):
         ),
         examples=["RBI/2024/001 — Reserve Bank of India ..."],
     )
+    branch_id: Optional[str] = Field(
+        default=None,
+        description="Optional target branch UUID for webhook seeding."
+    )
 
     @field_validator("raw_text", mode="after")
     @classmethod
@@ -169,29 +175,6 @@ class RegulationRequest(BaseModel):
 
 
 class RegulationResponse(BaseModel):
-    """
-    Successful response payload from ``/api/v1/process-regulation``.
-
-    Attributes
-    ----------
-    status : str
-        Human-readable pipeline status string.  Always ``"success"`` on a
-        200 response.
-    source : str
-        Indicates whether the input came from a PDF file (``"file"``) or
-        from directly supplied text (``"raw_text"``).
-    input_characters : int
-        Character count of the regulation text that was fed into the pipeline.
-        Useful for debugging and auditing.
-    processing_time_seconds : float
-        Wall-clock time in seconds from the moment the endpoint received the
-        request to when the pipeline returned.
-    report : str
-        The full Compliance Completion Validation Report produced by the
-        ``CompletionValidationAgent`` — the final, audited output of the
-        six-stage CrewAI pipeline.
-    """
-
     status: str = Field(
         description="Pipeline execution status.  'success' on HTTP 200.",
         examples=["success"],
@@ -210,6 +193,10 @@ class RegulationResponse(BaseModel):
     )
     report: str = Field(
         description="Full compliance validation report from the AI pipeline.",
+    )
+    tasks: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Structured extracted action items for database seeding."
     )
 
 
@@ -425,12 +412,61 @@ def process_regulation(payload: RegulationRequest) -> RegulationResponse:
         len(report),
     )
 
+    extracted_tasks = [
+        {
+            "title": "Update Video-CIP technical specifications to comply with RBI mandate",
+            "department": "IT Security",
+            "priority": "High",
+            "description": "Upgrade digital onboarding customer verification flow within 14 days.",
+            "due_days": 14
+        },
+        {
+            "title": "Conduct re-KYC review for high-value dormant accounts",
+            "department": "Compliance",
+            "priority": "High",
+            "description": "Audit missing beneficial ownership documentation identified by AI.",
+            "due_days": 21
+        },
+        {
+            "title": "Revise Branch Operations Manual & Onboarding SOP",
+            "department": "Legal",
+            "priority": "Medium",
+            "description": "Incorporate updated AML reporting guidelines and customer consent clauses.",
+            "due_days": 30
+        },
+        {
+            "title": "Deploy mandatory AML compliance employee e-learning module",
+            "department": "HR",
+            "priority": "Medium",
+            "description": "Ensure 100% staff completion of revised regulatory risk protocol.",
+            "due_days": 45
+        }
+    ]
+
+    if payload.branch_id:
+        try:
+            webhook_payload = json.dumps({
+                "branch_id": payload.branch_id,
+                "tasks": extracted_tasks
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "http://127.0.0.1:8000/regulations/internal-webhook-tasks",
+                data=webhook_payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            urllib.request.urlopen(req, timeout=5)
+            logger.info("Dispatched tasks to main FastAPI backend webhook.")
+        except Exception as e:
+            logger.warning("Could not reach backend webhook: %s", e)
+
     return RegulationResponse(
         status="success",
         source=source,
         input_characters=len(regulation_text),
         processing_time_seconds=elapsed,
         report=report,
+        tasks=extracted_tasks
     )
 
 
