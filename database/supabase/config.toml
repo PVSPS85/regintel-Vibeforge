@@ -30,25 +30,25 @@ extra_search_path = ["public", "extensions"]
 # ------------------------------------------------------------------------------
 [auth]
 enable_signup             = true
-enable_anonymous_sign_in  = false
+enable_anonymous_sign_ins = false
 minimum_password_length   = 8
+
+[auth.email]
 enable_confirmations      = true
 
 
 # ------------------------------------------------------------------------------
-# [database] — Local PostgreSQL instance settings.
+# [db] — Local PostgreSQL instance settings.
 # Port 54322 is the standard Supabase CLI local database port, kept separate
 # from the API gateway port to allow direct psql access during development.
 # ------------------------------------------------------------------------------
-[database]
+[db]
 port = 54322
 
 
 # ------------------------------------------------------------------------------
 # [realtime] — Supabase Realtime CDC synchronisation settings.
-# max_channels is set to 200 to accommodate concurrent WebSocket connections
-# across active branch workspaces, Kanban boards, chat rooms, and transfer
-# pipeline monitors without dropped message packets under peak load.
 # ------------------------------------------------------------------------------
 [realtime]
-max_channels = 200
+# max_channels is handled dynamically in newer versions of the CLI/Realtime engine.
+
