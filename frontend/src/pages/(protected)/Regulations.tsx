@@ -9,9 +9,6 @@ import {
   Shield,
   Check,
   AlertTriangle,
-  FileDown,
-  Info,
-  Clock,
   ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router';

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 try:
     import chromadb
@@ -222,8 +222,8 @@ class ChromaManager:
             self._collection.upsert(
                 ids=ids,
                 documents=documents,
-                embeddings=embeddings,
-                metadatas=metadatas,
+                embeddings=cast(Any, embeddings),
+                metadatas=cast(Any, metadatas),
             )
             logger.info(
                 "Upsert complete. Collection now holds %d document(s).",
@@ -323,10 +323,13 @@ class ChromaManager:
         )
 
         try:
-            raw: Dict[str, Any] = self._collection.query(
-                query_embeddings=[query_embedding],
-                n_results=effective_k,
-                include=["documents", "metadatas", "distances"],
+            raw: Dict[str, Any] = cast(
+                Dict[str, Any],
+                self._collection.query(
+                    query_embeddings=cast(Any, [query_embedding]),
+                    n_results=effective_k,
+                    include=["documents", "metadatas", "distances"],
+                ),
             )
         except Exception as exc:
             raise RuntimeError(

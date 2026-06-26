@@ -244,7 +244,7 @@ const SettingsButton = () => {
 
 const Topbar = () => {
   const pageTitle = usePageTitle();
-  const { isAdmin, toggleRole, user } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   return (
     <header className="topbar" role="banner">
