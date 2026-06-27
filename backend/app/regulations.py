@@ -24,6 +24,8 @@ class RegulationResponse(BaseModel):
     title: str
     uploaded_by: UUID
     status: str = "PROCESSING"
+    extracted_text: Optional[str] = None
+    summary: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -47,10 +49,32 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
     logger.info(f"[RegIntel AI Worker] Ingesting regulation {regulation_id} from {file_path}...")
     db = SessionLocal()
     try:
+        extracted_text_content = ""
+        try:
+            import fitz
+            doc = fitz.open(file_path)
+            pages = []
+            for page in doc:
+                pages.append(page.get_text("text"))
+            doc.close()
+            extracted_text_content = "\n".join(pages).strip()
+            if len(extracted_text_content.split()) == 0:
+                raise ValueError(f"Extracted 0 words from PDF '{file_path}'.")
+        except Exception as e:
+            logger.warning(f"Could not extract text with fitz: {e}")
+            raise ValueError(f"PDF extraction failed: {e}")
+
+        # Save extracted text immediately so frontend preview can show real text
+        reg = db.query(models.Regulation).filter(models.Regulation.id == regulation_id).first()
+        if reg and extracted_text_content:
+            reg.extracted_text = extracted_text_content[:15000]
+            db.commit()
+
         ai_service = get_ai_service()
         # Execute async AI pipeline dispatch
         result = asyncio.run(ai_service.process_regulation_pipeline(file_path, branch_id_str, str(regulation_id)))
         tasks_list = result.get("tasks", [])
+        report_content = result.get("report", "AI compliance analysis completed.")
 
         # Prevent duplicate insertion if webhook seeded first
         existing_count = db.query(models.Task).filter(models.Task.regulation_id == regulation_id).count()
@@ -91,6 +115,9 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
         reg = db.query(models.Regulation).filter(models.Regulation.id == regulation_id).first()
         if reg:
             reg.status = "PROCESSED"
+            if extracted_text_content:
+                reg.extracted_text = extracted_text_content[:15000]
+            reg.summary = report_content
         db.commit()
     except Exception as e:
         logger.error(f"[RegIntel AI Worker Error] Pipeline ingestion failed: {e}")
@@ -98,6 +125,8 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
             reg = db.query(models.Regulation).filter(models.Regulation.id == regulation_id).first()
             if reg:
                 reg.status = "FAILED"
+                if extracted_text_content:
+                    reg.extracted_text = extracted_text_content[:15000]
             db.commit()
         except Exception:
             pass
@@ -274,4 +303,18 @@ def get_regulation_tasks(
             "due_date": t.due_date.strftime("%b %d") if t.due_date else "Jul 10"
         })
     return res
+
+
+@router.post("/{id}/distribute")
+def distribute_regulation_tasks(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(RequireRole(["Branch Manager", "Branch Admin", "System Admin"]))
+):
+    """Marks all extracted tasks for this regulation as distributed/in-progress."""
+    tasks = db.query(models.Task).filter(models.Task.regulation_id == id).all()
+    for t in tasks:
+        t.status = models.TaskStatus.IN_PROGRESS
+    db.commit()
+    return {"status": "success", "distributed_count": len(tasks)}
 

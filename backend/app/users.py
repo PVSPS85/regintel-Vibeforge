@@ -26,14 +26,35 @@ def read_users(
     current_user: models.User = Depends(get_current_active_user)
 ):
     """
-    Retrieve a list of users.
-    System Admins can see all users. 
-    Other roles strictly see users within their own branch.
+    Retrieve branch-scoped users.
+    Hackathon fallback: if the user's branch has no other users, resolve
+    MG Road Branch by name and return its users so the demo always has
+    chat contacts and team members available.
     """
-    if current_user.role == models.UserRole.SYSTEM_ADMIN.value:
-        users = db.query(models.User).all()
-    else:
-        users = db.query(models.User).filter(models.User.branch_id == current_user.branch_id).all()
+    role_val = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_val == models.UserRole.SYSTEM_ADMIN.value:
+        return db.query(models.User).all()
+
+    # Priority 1: user's own branch
+    branch_id = current_user.branch_id
+    users = []
+    if branch_id:
+        users = db.query(models.User).filter(models.User.branch_id == branch_id).all()
+
+    # Priority 2 (Hackathon Bypass): fall back to MG Road Branch if empty
+    if not users:
+        mg_branch = (
+            db.query(models.Branch)
+            .filter(models.Branch.name.ilike("%MG Road%"))
+            .first()
+        )
+        if mg_branch:
+            users = db.query(models.User).filter(models.User.branch_id == mg_branch.id).all()
+
+    # Priority 3: absolute last resort — return all active users
+    if not users:
+        users = db.query(models.User).filter(models.User.is_active == True).all()
+
     return users
 
 @router.patch("/{user_id}", response_model=schemas.User)

@@ -94,6 +94,27 @@ class Team(Base):
     members = relationship("User", secondary=team_members, back_populates="teams")
     tasks = relationship("Task", foreign_keys="[Task.assigned_to_team]", back_populates="assigned_team")
 
+    @property
+    def leader_name(self) -> str:
+        return self.leader.name if self.leader else "Unassigned"
+
+    @property
+    def member_count(self) -> int:
+        return len(self.members) if self.members else 0
+
+    @property
+    def pending_tasks(self) -> int:
+        return len([t for t in self.tasks if t.status != TaskStatus.COMPLETED]) if self.tasks else 0
+
+    @property
+    def completed_tasks(self) -> int:
+        return len([t for t in self.tasks if t.status == TaskStatus.COMPLETED]) if self.tasks else 0
+
+    @property
+    def compliance_score(self) -> int:
+        total = self.pending_tasks + self.completed_tasks
+        return int((self.completed_tasks / total) * 100) if total > 0 else 100
+
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -150,6 +171,23 @@ class Chat(Base):
     members = relationship("User", secondary=chat_members)
     messages = relationship("ChatMessage", back_populates="chat")
 
+    @property
+    def display_name(self) -> str:
+        if self.is_group:
+            return self.team.name if self.team else "Group Chat"
+        if self.members:
+            return ", ".join([m.name for m in self.members])
+        return "Direct Message"
+
+    @property
+    def member_list(self):
+        if self.is_group and self.team:
+            team_users = list(self.team.members) if self.team.members else []
+            if self.team.leader and self.team.leader not in team_users:
+                team_users.append(self.team.leader)
+            return team_users
+        return self.members
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
@@ -161,6 +199,14 @@ class ChatMessage(Base):
 
     chat = relationship("Chat", back_populates="messages")
     sender = relationship("User")
+
+    @property
+    def sender_name(self) -> str:
+        return self.sender.name if self.sender else "Unknown"
+
+    @property
+    def sender_role(self) -> str:
+        return self.sender.role if self.sender else ""
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -182,6 +228,8 @@ class Regulation(Base):
     file_path = Column(String, nullable=False)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     status = Column(String, default="PROCESSING")
+    extracted_text = Column(String, nullable=True)
+    summary = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     uploader = relationship("User")

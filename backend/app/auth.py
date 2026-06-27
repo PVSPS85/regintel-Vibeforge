@@ -48,12 +48,23 @@ def request_access(user_data: schemas.RequestAccessCreate, db: Session = Depends
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_pw = get_password_hash(user_data.password)
+
+    # ── Hackathon Branch Auto-Assign ───────────────────────────────────────────
+    # Auto-link every new user to MG Road Branch so they see seeded teams immediately.
+    mg_branch = (
+        db.query(models.Branch)
+        .filter(models.Branch.name.ilike("%MG Road%"))
+        .first()
+    )
+    auto_branch_id = mg_branch.id if mg_branch else branch.id
+    # ─────────────────────────────────────────────────────────────────────────
+
     new_user = models.User(
         name=user_data.name,
         email=user_data.email,
         hashed_password=hashed_pw,
         role=models.UserRole.EMPLOYEE,
-        branch_id=branch.id,
+        branch_id=auto_branch_id,
         is_active=False  # Pending state
     )
     
@@ -79,12 +90,26 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="User account is pending approval or inactive."
         )
 
-    # JWT payload
+    # ── Hackathon Branch Guarantee ─────────────────────────────────────────────
+    # On every login, resolve MG Road Branch and attach this user to it.
+    # This eliminates all stale branch_id / JWT mismatch issues permanently.
+    mg_branch = (
+        db.query(models.Branch)
+        .filter(models.Branch.name.ilike("%MG Road%"))
+        .first()
+    )
+    if mg_branch and user.branch_id != mg_branch.id:
+        user.branch_id = mg_branch.id
+        db.commit()
+        db.refresh(user)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # JWT payload — always use the live branch_id from the DB row
     access_token = create_access_token(
         data={
             "sub": str(user.id),
             "user_id": str(user.id),
-            "role": user.role.value,
+            "role": user.role.value if hasattr(user.role, "value") else str(user.role),
             "branch_id": str(user.branch_id) if user.branch_id else None
         }
     )

@@ -381,13 +381,11 @@ def process_regulation(payload: RegulationRequest) -> RegulationResponse:
             detail=f"Failed to initialise the AI agent pipeline: {exc}",
         ) from exc
 
-    logger.info("Running compliance pipeline ...")
+    logger.info("Running fast compliance pipeline (2 agents)...")
 
     try:
-        report: str = crew_instance.run_pipeline(pdf_text=regulation_text)
+        pipeline_result: dict = crew_instance.run_pipeline(pdf_text=regulation_text)
     except ValueError as exc:
-        # run_pipeline raises ValueError for empty text — shouldn't happen here
-        # because we guard above, but include for defence in depth.
         logger.error("Pipeline rejected input text: %s", exc)
         raise HTTPException(
             status_code=400,
@@ -410,42 +408,15 @@ def process_regulation(payload: RegulationRequest) -> RegulationResponse:
     # Step 3 — Build and return the response
     # ------------------------------------------------------------------
     elapsed: float = round(time.perf_counter() - start_time, 3)
-    logger.info(
-        "Pipeline completed in %.3fs. Report length: %d characters.",
-        elapsed,
-        len(report),
-    )
 
-    extracted_tasks = [
-        {
-            "title": "Update Video-CIP technical specifications to comply with RBI mandate",
-            "department": "IT Security",
-            "priority": "High",
-            "description": "Upgrade digital onboarding customer verification flow within 14 days.",
-            "due_days": 14
-        },
-        {
-            "title": "Conduct re-KYC review for high-value dormant accounts",
-            "department": "Compliance",
-            "priority": "High",
-            "description": "Audit missing beneficial ownership documentation identified by AI.",
-            "due_days": 21
-        },
-        {
-            "title": "Revise Branch Operations Manual & Onboarding SOP",
-            "department": "Legal",
-            "priority": "Medium",
-            "description": "Incorporate updated AML reporting guidelines and customer consent clauses.",
-            "due_days": 30
-        },
-        {
-            "title": "Deploy mandatory AML compliance employee e-learning module",
-            "department": "HR",
-            "priority": "Medium",
-            "description": "Ensure 100% staff completion of revised regulatory risk protocol.",
-            "due_days": 45
-        }
-    ]
+    # Use REAL AI-generated tasks from the pipeline (not hardcoded)
+    report: str = pipeline_result.get("report", "")
+    extracted_tasks: list = pipeline_result.get("tasks", [])
+
+    logger.info(
+        "Pipeline completed in %.3fs. Report: %d chars. Tasks extracted: %d.",
+        elapsed, len(report), len(extracted_tasks),
+    )
 
     if payload.branch_id:
         try:

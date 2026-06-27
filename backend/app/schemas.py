@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 
 class Role(str, Enum):
     EMPLOYEE = "Employee"
@@ -40,7 +40,7 @@ class Branch(BranchBase):
 
 class UserBase(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     role: Role
     branch_id: Optional[UUID] = None
 
@@ -65,6 +65,6 @@ class TokenData(BaseModel):
 
 class RequestAccessCreate(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     password: str
     branch_code: str

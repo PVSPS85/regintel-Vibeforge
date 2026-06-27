@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   Upload,
@@ -9,7 +9,8 @@ import {
   Shield,
   Check,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +18,37 @@ import api from '../../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ViewState = 'upload' | 'analyzing' | 'analyzed';
+
+interface RegulationItem {
+  id: string;
+  title: string;
+  uploaded_by: string;
+  status: string;
+  extracted_text?: string;
+  summary?: string;
+  created_at: string;
+}
+
+interface ActionPoint {
+  id: number;
+  taskId: string;
+  text: string;
+  team: string;
+  due: string;
+  priority: string;
+}
+
+interface AffectedTeam {
+  id: string;
+  name: string;
+  abbr: string;
+  desc: string;
+  color: string;
+  bg: string;
+  border: string;
+  tasks: number;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+}
 
 const STEPS = [
   { id: 1, label: 'Upload PDF', sub: 'RBI / SEBI / FIU circular', icon: Upload },
@@ -27,65 +59,13 @@ const STEPS = [
   { id: 6, label: 'Track Completion', sub: 'Monitor team progress', icon: Shield },
 ];
 
-const RECENT_UPLOADS = [
-  { id: 1, name: 'SEBI_LODR_Amendment_2024.pdf', date: 'Jun 12', status: 'DISTRIBUTED' },
-  { id: 2, name: 'FIU_AML_Guidelines_v3.pdf', date: 'Jun 08', status: 'UNDER REVIEW' },
-];
-
-const AFFECTED_TEAMS = [
-  {
-    id: 'it',
-    name: 'IT Security',
-    abbr: 'IT',
-    desc: 'System Updates Required',
-    color: 'bg-blue-600',
-    bg: 'bg-blue-50',
-    border: 'border-blue-100',
-    tasks: 2,
-    severity: 'HIGH'
-  },
-  {
-    id: 'co',
-    name: 'Compliance',
-    abbr: 'Co',
-    desc: 'Process Overhaul',
-    color: 'bg-emerald-500',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-    tasks: 2,
-    severity: 'HIGH'
-  },
-  {
-    id: 'le',
-    name: 'Legal',
-    abbr: 'Le',
-    desc: 'Documentation Update',
-    color: 'bg-amber-500',
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
-    tasks: 1,
-    severity: 'MEDIUM'
-  },
-  {
-    id: 'hr',
-    name: 'HR',
-    abbr: 'HR',
-    desc: 'Staff Training Required',
-    color: 'bg-purple-500',
-    bg: 'bg-purple-50',
-    border: 'border-purple-100',
-    tasks: 1,
-    severity: 'MEDIUM'
-  }
-];
-
-const ACTION_POINTS = [
-  { id: 1, text: 'Update Video-CIP system to comply with new RBI technical specifications', team: 'IT Security', due: 'Jun 20' },
-  { id: 2, text: 'Conduct re-KYC for all dormant accounts inactive for more than 2 years', team: 'Compliance', due: 'Jun 28' },
-  { id: 3, text: 'Revise Customer Onboarding SOP with new beneficial ownership requirements', team: 'Legal', due: 'Jun 25' },
-  { id: 4, text: 'Train all branch staff on updated KYC procedures (mandatory e-learning)', team: 'HR', due: 'Jul 05' },
-  { id: 5, text: 'Update IT systems to automatically flag high-risk customers', team: 'IT Security', due: 'Jun 22' },
-  { id: 6, text: 'Submit compliance certification to Head Office within 15 days', team: 'Compliance', due: 'Jun 25' },
+const TEAM_PALETTES = [
+  { color: 'bg-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+  { color: 'bg-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+  { color: 'bg-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
+  { color: 'bg-purple-500', bg: 'bg-purple-50', border: 'border-purple-100' },
+  { color: 'bg-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
+  { color: 'bg-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
 ];
 
 const Regulations = () => {
@@ -94,11 +74,127 @@ const Regulations = () => {
   
   const [view, setView] = useState<ViewState>('upload');
   const [dragOver, setDragOver] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState({ name: 'RBI_Master_Direction_KYC_Amendment_2026.pdf', size: '4.2 MB' });
+  const [uploadedFile, setUploadedFile] = useState({ name: '', size: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [progress, setProgress] = useState(0);
-  const [actionPoints, setActionPoints] = useState(ACTION_POINTS);
+  const [currentRegId, setCurrentRegId] = useState<string | null>(null);
+  const [extractedText, setExtractedText] = useState<string>('');
+  const [summary, setSummary] = useState<string>('');
+  const [actionPoints, setActionPoints] = useState<ActionPoint[]>([]);
+  const [affectedTeams, setAffectedTeams] = useState<AffectedTeam[]>([]);
+  const [recentUploads, setRecentUploads] = useState<RegulationItem[]>([]);
+  const [loadingUploads, setLoadingUploads] = useState(true);
+  const [isDistributing, setIsDistributing] = useState(false);
+
+  const fetchRegulations = async () => {
+    try {
+      setLoadingUploads(true);
+      const res = await api.get<RegulationItem[]>('/regulations/');
+      if (res.data) {
+        setRecentUploads(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load regulations:', err);
+    } finally {
+      setLoadingUploads(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchRegulations();
+    }
+  }, [isAdmin]);
+
+  const formatDate = (dateString: string) => {
+    try {
+      const d = new Date(dateString);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return 'Recent';
+    }
+  };
+
+  const processTasksPayload = (tasksData: any[]) => {
+    const mappedActions: ActionPoint[] = tasksData.map((t: any, idx: number) => ({
+      id: idx + 1,
+      taskId: t.id,
+      text: t.title + (t.description ? ` — ${t.description}` : ''),
+      team: t.department || 'Compliance',
+      due: t.due_date || '14 days',
+      priority: t.priority || 'Medium'
+    }));
+    setActionPoints(mappedActions);
+
+    // Dynamic computation of affected teams strictly from live response
+    const teamMap: Record<string, { count: number; priority: string }> = {};
+    tasksData.forEach((t: any) => {
+      const dept = t.department || 'Compliance';
+      if (!teamMap[dept]) {
+        teamMap[dept] = { count: 0, priority: t.priority || 'Medium' };
+      }
+      teamMap[dept].count += 1;
+      if (t.priority === 'High' || t.priority === 'HIGH') {
+        teamMap[dept].priority = 'HIGH';
+      }
+    });
+
+    const dynamicTeams: AffectedTeam[] = Object.keys(teamMap).map((dept, idx) => {
+      const palette = TEAM_PALETTES[idx % TEAM_PALETTES.length];
+      const prio = teamMap[dept].priority.toUpperCase();
+      const severity: 'HIGH' | 'MEDIUM' | 'LOW' = prio === 'HIGH' ? 'HIGH' : prio === 'LOW' ? 'LOW' : 'MEDIUM';
+      
+      return {
+        id: dept.toLowerCase().replace(/\s+/g, '-'),
+        name: dept,
+        abbr: dept.substring(0, 2).toUpperCase(),
+        desc: `Assigned compliance action items for ${dept}`,
+        color: palette.color,
+        bg: palette.bg,
+        border: palette.border,
+        tasks: teamMap[dept].count,
+        severity: severity
+      };
+    });
+
+    setAffectedTeams(dynamicTeams);
+  };
+
+  const loadRegulationDetails = async (regId: string, filename: string) => {
+    setCurrentRegId(regId);
+    setUploadedFile({ name: filename, size: 'Stored Circular' });
+    setView('analyzing');
+    setProgress(40);
+
+    try {
+      const stRes = await api.get(`/regulations/${regId}`);
+      const regData = stRes.data;
+      
+      if (regData.extracted_text) {
+        setExtractedText(regData.extracted_text);
+      } else {
+        setExtractedText("No raw text extraction recorded for this document.");
+      }
+
+      if (regData.summary) {
+        setSummary(regData.summary);
+      } else {
+        setSummary("AI compliance analysis report completed.");
+      }
+
+      setProgress(80);
+      const tasksRes = await api.get(`/regulations/${regId}/tasks`);
+      processTasksPayload(tasksRes.data || []);
+      
+      setProgress(100);
+      setView('analyzed');
+    } catch (err) {
+      console.error("Failed to load regulation details:", err);
+      alert("Could not load details for this circular.");
+      setView('upload');
+    }
+  };
 
   const triggerUpload = () => {
     if (fileInputRef.current) {
@@ -111,6 +207,10 @@ const Regulations = () => {
     setUploadedFile({ name: file.name, size: `${sizeMB} MB` });
     setView('analyzing');
     setProgress(15);
+    setExtractedText('');
+    setSummary('');
+    setActionPoints([]);
+    setAffectedTeams([]);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -122,52 +222,63 @@ const Regulations = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const regId = res.data?.id;
+      setCurrentRegId(regId);
 
       let currentProg = 35;
       const pollInterval = setInterval(async () => {
-        currentProg = Math.min(currentProg + 15, 92);
+        currentProg = Math.min(currentProg + 15, 90);
         setProgress(currentProg);
         if (regId) {
           try {
             const stRes = await api.get(`/regulations/${regId}`);
             const status = stRes.data?.status;
-            if (status === 'PROCESSED' || status === 'COMPLETED') {
+            if (status === 'PROCESSED' || status === 'COMPLETED' || status === 'FAILED') {
               clearInterval(pollInterval);
+              
+              const regData = stRes.data;
+              if (regData.extracted_text) {
+                setExtractedText(regData.extracted_text);
+              } else {
+                setExtractedText("No extractable text found in PDF document.");
+              }
+
+              if (regData.summary) {
+                setSummary(regData.summary);
+              } else {
+                setSummary(status === 'FAILED' ? "Analysis failed during AI processing." : "AI compliance analysis completed successfully.");
+              }
+
               try {
                 const tasksRes = await api.get(`/regulations/${regId}/tasks`);
-                if (tasksRes.data && tasksRes.data.length > 0) {
-                  const mappedActions = tasksRes.data.map((t: any, idx: number) => ({
-                    id: idx + 1,
-                    text: t.title + (t.description ? ` — ${t.description}` : ''),
-                    team: t.department || 'Compliance',
-                    due: t.due_date || 'Jul 10'
-                  }));
-                  setActionPoints(mappedActions);
+                if (tasksRes.data) {
+                  processTasksPayload(tasksRes.data);
                 }
-              } catch (err) {}
+              } catch (err) {
+                console.error("Failed fetching tasks:", err);
+              }
+
               setProgress(100);
               setView('analyzed');
-            } else if (status === 'FAILED') {
-              clearInterval(pollInterval);
-              setProgress(100);
-              setView('analyzed');
+              fetchRegulations();
             }
-          } catch (err) {}
+          } catch (err) {
+            console.error("Polling error:", err);
+          }
         }
       }, 1500);
 
-      // Safety fallback timeout
+      // Safety timeout fallback
       setTimeout(() => {
         clearInterval(pollInterval);
-        setProgress(100);
-        setView('analyzed');
-      }, 12000);
-    } catch (e) {
-      setProgress(90);
-      setTimeout(() => {
-        setProgress(100);
-        setView('analyzed');
-      }, 600);
+        if (view === 'analyzing') {
+          setProgress(100);
+          setView('analyzed');
+        }
+      }, 25000);
+    } catch (e: any) {
+      console.error("Upload error:", e);
+      alert(e.response?.data?.detail || "Failed to upload regulation PDF.");
+      setView('upload');
     }
   };
 
@@ -185,7 +296,22 @@ const Regulations = () => {
     }
   };
 
-  // Determine active step based on view
+  const handleDistributeTasks = async () => {
+    if (!currentRegId) return;
+    setIsDistributing(true);
+    try {
+      await api.post(`/regulations/${currentRegId}/distribute`);
+      alert(`Successfully distributed ${actionPoints.length} compliance action items to ${affectedTeams.length} departments!`);
+      setView('upload');
+      fetchRegulations();
+    } catch (err: any) {
+      console.error('Error distributing tasks:', err);
+      alert('Failed to distribute tasks. Please check server status.');
+    } finally {
+      setIsDistributing(false);
+    }
+  };
+
   const getStepStatus = (stepId: number) => {
     if (view === 'upload') {
       return stepId === 1 ? 'active' : 'pending';
@@ -247,7 +373,6 @@ const Regulations = () => {
         <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 mb-6">
           <h3 className="text-[13px] font-bold text-gray-700 mb-6">RegIntel Compliance Workflow</h3>
           <div className="relative flex justify-between">
-            {/* Connecting Line */}
             <div className="absolute top-[18px] left-[5%] right-[5%] h-0.5 bg-gray-200 -z-10" />
             <div 
               className="absolute top-[18px] left-[5%] h-0.5 bg-blue-600 -z-10 transition-all duration-500" 
@@ -315,27 +440,49 @@ const Regulations = () => {
             </div>
 
             <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden mt-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-[13px] font-bold text-gray-700">Recent Uploads</h3>
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-[13px] font-bold text-gray-700">Uploaded Regulatory Circulars</h3>
+                <button 
+                  onClick={fetchRegulations} 
+                  className="text-xs text-blue-600 hover:underline font-medium cursor-pointer"
+                >
+                  Refresh List
+                </button>
               </div>
-              <div className="divide-y divide-gray-100">
-                {RECENT_UPLOADS.map(upload => (
-                  <div key={upload.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-gray-400" />
-                      <span className="text-sm font-medium text-gray-700">{upload.name}</span>
+              
+              {loadingUploads ? (
+                <div className="p-8 flex items-center justify-center text-gray-400 gap-2 text-sm">
+                  <Loader2 size={16} className="animate-spin" /> Loading uploaded circulars...
+                </div>
+              ) : recentUploads.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">
+                  No regulations uploaded yet. Drop a file above to begin AI analysis.
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {recentUploads.map(upload => (
+                    <div 
+                      key={upload.id} 
+                      onClick={() => loadRegulationDetails(upload.id, upload.title)}
+                      className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText size={18} className="text-blue-600" />
+                        <span className="text-sm font-medium text-gray-800 hover:text-blue-600 transition-colors">{upload.title}</span>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <span className="text-xs text-gray-400">{formatDate(upload.created_at)}</span>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                          upload.status === 'PROCESSED' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
+                          upload.status === 'FAILED' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-600 border-amber-200'
+                        }`}>
+                          {upload.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <span className="text-xs text-gray-400">{upload.date}</span>
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                        upload.status === 'DISTRIBUTED' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'
-                      }`}>
-                        {upload.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -351,7 +498,7 @@ const Regulations = () => {
               AI Analyzing: {uploadedFile.name}
             </h2>
             <p className="text-sm text-gray-500 mb-8 text-center max-w-lg">
-              Extracting key directives, identifying affected teams, generating compliance action points...
+              Extracting key clauses, identifying affected banking departments, and generating actionable compliance obligations...
             </p>
             
             <div className="w-full max-w-md mb-8">
@@ -399,36 +546,24 @@ const Regulations = () => {
                     {uploadedFile.name}
                   </h3>
                   <p className="text-[13px] text-gray-500">
-                    Uploaded today · {uploadedFile.size} · AI Analysis Complete
+                    Live document analysis · {uploadedFile.size} · Processing Complete
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-sm font-bold border border-emerald-200">
-                <Check size={16} /> Analyzed
+                <Check size={16} /> Extracted & Verified
               </div>
             </div>
 
-            {/* Split Content: Preview & Summary */}
+            {/* Split Content: Preview & Summary strictly mapped from API payload */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* Extracted Text */}
               <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 flex flex-col h-[320px] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
                 <h4 className="text-[13px] font-bold text-gray-900 mb-4">Extracted Text Preview</h4>
                 <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-y-auto">
-                  <pre className="text-[12px] font-mono text-gray-600 leading-relaxed whitespace-pre-wrap">
-                    {`RBI/2024-25/102
-DBOD.No.BP.BC.102/21.04.048/2024-25
-June 10, 2025
-
-All Scheduled Commercial Banks 
-(excluding Small Finance Banks and Payments Banks)
-
-Master Direction - Reserve Bank of India (Know Your Customer (KYC))
-Directions, 2016 - Amendment
-
-In terms of the provisions of Section 35A of the Banking Regulation Act, 
-1949, and the Prevention of Money-Laundering (Maintenance of Records) 
-Rules, 2005, it has been decided to amend the Master Direction on KYC...`}
+                  <pre className="text-[12px] font-mono text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {extractedText || "No raw text was extracted from this file."}
                   </pre>
                 </div>
               </div>
@@ -437,47 +572,52 @@ Rules, 2005, it has been decided to amend the Master Direction on KYC...`}
               <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 flex flex-col h-[320px] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap size={18} className="text-blue-600" />
-                  <h4 className="text-[13px] font-bold text-gray-900">AI Summary</h4>
+                  <h4 className="text-[13px] font-bold text-gray-900">AI Summary & Mandates</h4>
                   <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">
-                    AI Generated
+                    Live API Payload
                   </span>
                 </div>
                 
-                <p className="text-[14px] text-gray-700 leading-relaxed mb-6">
-                  This RBI circular mandates enhanced KYC procedures including updated Video-CIP guidelines, stricter beneficial ownership identification, and mandatory re-KYC for dormant accounts. All affected branches must complete compliance within 30 days.<br/><br/>
-                  Impacts: IT Security (system updates), Compliance (process review), Legal (documentation), HR (staff training).
-                </p>
+                <div className="flex-1 overflow-y-auto pr-2">
+                  <p className="text-[14px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {summary || "No analysis report generated."}
+                  </p>
+                </div>
 
-                <div className="mt-auto flex items-center gap-2 text-orange-600 font-medium text-[13px]">
+                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2 text-orange-600 font-medium text-[13px]">
                   <AlertTriangle size={16} />
-                  Compliance deadline: 30 days from issuance
+                  Action required by mapped banking departments
                 </div>
               </div>
             </div>
 
             {/* Affected Teams */}
             <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
-              <h4 className="text-[13px] font-bold text-gray-900 mb-4">Affected Teams ({AFFECTED_TEAMS.length})</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {AFFECTED_TEAMS.map(team => (
-                  <div key={team.id} className={`p-5 rounded-xl border ${team.border} ${team.bg} relative overflow-hidden flex flex-col`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs mb-3 ${team.color}`}>
-                      {team.abbr}
+              <h4 className="text-[13px] font-bold text-gray-900 mb-4">Affected Teams ({affectedTeams.length})</h4>
+              {affectedTeams.length === 0 ? (
+                <p className="text-sm text-gray-500 italic py-4">No specific departmental obligations detected in this circular.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {affectedTeams.map(team => (
+                    <div key={team.id} className={`p-5 rounded-xl border ${team.border} ${team.bg} relative overflow-hidden flex flex-col`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs mb-3 ${team.color}`}>
+                        {team.abbr}
+                      </div>
+                      <h5 className="text-[15px] font-bold text-gray-900 mb-1">{team.name}</h5>
+                      <p className="text-[12px] text-gray-600 mb-6">{team.desc}</p>
+                      
+                      <div className="mt-auto flex items-center justify-between">
+                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                          team.severity === 'HIGH' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-orange-50 text-orange-600 border-orange-200'
+                        }`}>
+                          {team.severity} Priority
+                        </span>
+                        <span className="text-[12px] font-bold text-blue-600">{team.tasks} {team.tasks === 1 ? 'task' : 'tasks'}</span>
+                      </div>
                     </div>
-                    <h5 className="text-[15px] font-bold text-gray-900 mb-1">{team.name}</h5>
-                    <p className="text-[12px] text-gray-600 mb-6">{team.desc}</p>
-                    
-                    <div className="mt-auto flex items-center justify-between">
-                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
-                        team.severity === 'HIGH' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-orange-50 text-orange-600 border-orange-200'
-                      }`}>
-                        {team.severity}
-                      </span>
-                      <span className="text-[12px] font-bold text-blue-600">{team.tasks} tasks</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Generated Action Points */}
@@ -487,26 +627,30 @@ Rules, 2005, it has been decided to amend the Master Direction on KYC...`}
                 <h4 className="text-[13px] font-bold text-gray-900">Generated Action Points ({actionPoints.length})</h4>
               </div>
               
-              <div className="space-y-4">
-                {actionPoints.map(action => (
-                  <div key={action.id} className="flex items-start gap-4 p-4 border border-gray-100 hover:border-gray-200 rounded-xl bg-gray-50/50 transition-colors">
-                    <div className="w-6 h-6 rounded-full border border-gray-200 bg-white flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0 mt-0.5">
-                      {action.id}
+              {actionPoints.length === 0 ? (
+                <p className="text-sm text-gray-500 italic py-4">No compliance action items generated for this circular.</p>
+              ) : (
+                <div className="space-y-4">
+                  {actionPoints.map(action => (
+                    <div key={action.id} className="flex items-start gap-4 p-4 border border-gray-100 hover:border-gray-200 rounded-xl bg-gray-50/50 transition-colors">
+                      <div className="w-6 h-6 rounded-full border border-gray-200 bg-white flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0 mt-0.5">
+                        {action.id}
+                      </div>
+                      <p className="text-[14px] text-gray-800 font-medium flex-1 pt-0.5">
+                        {action.text}
+                      </p>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="flex items-center gap-1 text-[12px] font-medium text-gray-500">
+                          <ArrowRight size={12} /> {action.team}
+                        </span>
+                        <span className="text-[11px] font-medium text-gray-400">
+                          Due: {action.due}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-[14px] text-gray-800 font-medium flex-1 pt-0.5">
-                      {action.text}
-                    </p>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="flex items-center gap-1 text-[12px] font-medium text-gray-500">
-                        <ArrowRight size={12} /> {action.team}
-                      </span>
-                      <span className="text-[11px] font-medium text-gray-400">
-                        Due: {action.due}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -517,14 +661,20 @@ Rules, 2005, it has been decided to amend the Master Direction on KYC...`}
       {view === 'analyzed' && (
         <div className="fixed bottom-0 left-[260px] right-0 p-6 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
           <button
-            onClick={() => {
-              alert('Tasks distributed successfully!');
-              setView('upload');
-            }}
-            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-base font-bold shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            onClick={handleDistributeTasks}
+            disabled={isDistributing || actionPoints.length === 0}
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-base font-bold shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Send size={18} />
-            Distribute Work to {AFFECTED_TEAMS.length} Teams <ArrowRight size={18} />
+            {isDistributing ? (
+              <>
+                <Loader2 size={18} className="animate-spin" /> Distributing Compliance Tasks...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Distribute Work to {affectedTeams.length} {affectedTeams.length === 1 ? 'Team' : 'Teams'} <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </div>
       )}

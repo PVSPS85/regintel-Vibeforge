@@ -124,7 +124,12 @@ class PDFProcessor:
         finally:
             document.close()
 
-        full_text: str = "\n".join(page_texts)
+        full_text: str = "\n".join(page_texts).strip()
+        if len(full_text.split()) == 0:
+            raise ValueError(
+                f"Extracted 0 words from PDF '{file_path}'. The document appears to be image-only, empty, or unreadable."
+            )
+
         logger.info(
             "Extraction complete. Total characters: %d", len(full_text)
         )
