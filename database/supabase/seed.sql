@@ -11,7 +11,7 @@
 -- SEED: branches
 -- 10 predefined banking branch records with static UUIDs and branch codes.
 -- ---------------------------------------------------------------------------
-INSERT INTO branches (id, branch_name, branch_code, created_at)
+INSERT INTO branches (id, name, code, created_at)
 VALUES
     (
         '11111111-1111-1111-1111-111111111111',
@@ -73,4 +73,4 @@ VALUES
         'BR-KOC-010',
         CURRENT_TIMESTAMP
     )
-ON CONFLICT (branch_code) DO NOTHING;
+ON CONFLICT (code) DO NOTHING;

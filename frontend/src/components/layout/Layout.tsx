@@ -1,12 +1,10 @@
 import { Outlet } from 'react-router';
-import { AuthProvider } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function Layout() {
   return (
-    <AuthProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-slate-50 relative">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 relative">
       {/* Aurora background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/20 blur-[120px]" />
@@ -30,6 +28,5 @@ export default function Layout() {
         </main>
       </div>
     </div>
-    </AuthProvider>
   );
 }

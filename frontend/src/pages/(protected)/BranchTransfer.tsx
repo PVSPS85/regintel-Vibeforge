@@ -30,6 +30,50 @@ interface BranchInfo {
 // ─── Branch Database ────────────────────────────────────────────────────────────
 
 const BRANCH_DB: Record<string, BranchInfo> = {
+  'br-mum-001': {
+    code: 'BR-MUM-001',
+    name: 'Mumbai Corporate Head Office',
+    city: 'Mumbai',
+    manager: 'Rohit Pal',
+    managerInitials: 'RP',
+    managerColor: 'bg-indigo-600',
+    employees: 65,
+    teams: 8,
+    compliance: 94,
+  },
+  'br-blr-002': {
+    code: 'BR-BLR-002',
+    name: 'Bengaluru Tech & Innovation Hub',
+    city: 'Bengaluru',
+    manager: 'pranav',
+    managerInitials: 'PR',
+    managerColor: 'bg-blue-600',
+    employees: 50,
+    teams: 7,
+    compliance: 96,
+  },
+  'br-del-003': {
+    code: 'BR-DEL-003',
+    name: 'New Delhi Regional Centre',
+    city: 'New Delhi',
+    manager: 'Vikram Nair',
+    managerInitials: 'VN',
+    managerColor: 'bg-emerald-600',
+    employees: 45,
+    teams: 6,
+    compliance: 91,
+  },
+  'br-chn-004': {
+    code: 'BR-CHN-004',
+    name: 'Chennai Operations Base',
+    city: 'Chennai',
+    manager: 'Aisha Mehta',
+    managerInitials: 'AM',
+    managerColor: 'bg-purple-600',
+    employees: 35,
+    teams: 5,
+    compliance: 89,
+  },
   blr001: {
     code: 'blr001',
     name: 'MG Road Branch',
@@ -124,7 +168,7 @@ export default function BranchTransfer() {
         setTargetBranch(found);
         setBranchError('');
       } else {
-        setBranchError(`Branch code "${branchCode}" not recognized. Try: blr001, del002, mum003, che004, or 474747`);
+        setBranchError(`Branch code "${branchCode}" not recognized. Try: BR-MUM-001, BR-BLR-002, BR-DEL-003, or blr001`);
       }
       setVerifying(false);
     }, 800);

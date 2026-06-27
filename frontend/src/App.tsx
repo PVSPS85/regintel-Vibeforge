@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Layout & Auth wrappers
 import Layout from './components/layout/Layout';
@@ -59,7 +60,8 @@ import UserManagement from './pages/(admin)/UserManagement';
 const App = () => {
   return (
     <BrowserRouter>
-      <Routes>
+      <AuthProvider>
+        <Routes>
         {/* ── Public routes ── */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
@@ -93,6 +95,7 @@ const App = () => {
           </Route>
         </Route>
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

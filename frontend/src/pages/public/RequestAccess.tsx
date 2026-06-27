@@ -1,7 +1,26 @@
 import { CheckCircle2, Clock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import api from '../../lib/api';
+
+interface BranchOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+const FALLBACK_BRANCHES: BranchOption[] = [
+  { id: '1', name: 'Mumbai Corporate Head Office', code: 'BR-MUM-001' },
+  { id: '2', name: 'Bengaluru Tech & Innovation Hub', code: 'BR-BLR-002' },
+  { id: '3', name: 'New Delhi Regional Centre', code: 'BR-DEL-003' },
+  { id: '4', name: 'Chennai Operations Base', code: 'BR-CHN-004' },
+  { id: '5', name: 'Kolkata Retail Clearing Division', code: 'BR-KOL-005' },
+  { id: '6', name: 'Hyderabad Risk Management Unit', code: 'BR-HYD-006' },
+  { id: '7', name: 'Ahmedabad Treasury & Markets', code: 'BR-AMD-007' },
+  { id: '8', name: 'Pune Rural Outreach Branch', code: 'BR-PUN-008' },
+  { id: '9', name: 'Jaipur Currency Chest', code: 'BR-JAI-009' },
+  { id: '10', name: 'Kochi NRI Banking Division', code: 'BR-KOC-010' },
+];
 
 // ─── Feature bullet points (left panel) ──────────────────────────────────────
 
@@ -29,6 +48,19 @@ const FEATURES = [
 const RequestAccess = () => {
   const navigate = useNavigate();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [branches, setBranches] = useState<BranchOption[]>(FALLBACK_BRANCHES);
+
+  useEffect(() => {
+    api.get<BranchOption[]>('/branches/')
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setBranches(res.data);
+        }
+      })
+      .catch(() => {
+        // Ignore errors and keep fallback branches
+      });
+  }, []);
   
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -227,20 +259,32 @@ const RequestAccess = () => {
                 {/* Row 3 */}
                 <div className="space-y-1.5">
                   <label className="block text-[13px] font-semibold text-gray-700">
-                    Branch Code
+                    Branch Selection
                   </label>
-                  <input
-                    required
-                    type="text"
-                    value={branchCode}
-                    onChange={(e) => setBranchCode(e.target.value)}
-                    placeholder="BR-MUM-001"
-                    className="w-full h-11 px-4 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white placeholder-gray-400 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                  />
-                  {branchCode.length >= 8 && (
+                  <div className="relative">
+                    <select
+                      required
+                      value={branchCode}
+                      onChange={(e) => setBranchCode(e.target.value)}
+                      className="w-full h-11 px-4 pr-10 rounded-md border border-gray-300 text-[14px] text-gray-900 bg-white outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled>Select your branch...</option>
+                      {branches.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.name} ({b.code})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                      <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
+                  </div>
+                  {branchCode && (
                     <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium">
                       <CheckCircle2 size={16} />
-                      Valid Seeded Branch Format Detected
+                      Selected Branch Code: {branchCode}
                     </div>
                   )}
                 </div>
