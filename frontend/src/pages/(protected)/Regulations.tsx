@@ -10,7 +10,8 @@ import {
   Check,
   AlertTriangle,
   ArrowRight,
-  Loader2
+  Loader2,
+  Building2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,6 +19,55 @@ import api from '../../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ViewState = 'upload' | 'analyzing' | 'analyzed';
+
+interface ParsedTask {
+  title: string;
+  department: string;
+  priority: string;
+  description?: string;
+  due_days?: number;
+}
+
+// ─── Helper: parse raw LLM JSON out of summary string ─────────────────────────
+const parseSummaryToTasks = (raw: string): ParsedTask[] | null => {
+  if (!raw) return null;
+  try {
+    // Strip markdown code fences if present
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const candidate = fenceMatch ? fenceMatch[1] : raw;
+
+    // Find outermost [ ... ] array
+    const start = candidate.indexOf('[');
+    const end = candidate.lastIndexOf(']');
+    if (start === -1 || end <= start) return null;
+
+    let jsonStr = candidate.slice(start, end + 1);
+    // Remove trailing commas before } or ]
+    jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+
+    const parsed = JSON.parse(jsonStr);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+
+    // Normalize field names — the LLM may use task_title, title, department, team, etc.
+    return parsed.map((item: any) => ({
+      title: item.title || item.task_title || item.task || 'Compliance Action',
+      department: item.department || item.team || item.assigned_team || 'Compliance',
+      priority: item.priority || 'Medium',
+      description: item.detailed_explanation || item.description || item.details || item.action_required || item.instructions || undefined,
+      detailed_explanation: item.detailed_explanation || item.description || item.details || item.action_required || item.instructions || undefined,
+      due_days: item.due_days || item.due || undefined,
+    }));
+  } catch {
+    return null;
+  }
+};
+
+const priorityBadgeStyle = (p: string) => {
+  const s = p?.toUpperCase();
+  if (s === 'HIGH') return 'bg-red-50 text-red-600 border-red-200';
+  if (s === 'LOW') return 'bg-gray-50 text-gray-500 border-gray-200';
+  return 'bg-amber-50 text-amber-600 border-amber-200';
+};
 
 interface RegulationItem {
   id: string;
@@ -32,6 +82,9 @@ interface RegulationItem {
 interface ActionPoint {
   id: number;
   taskId: string;
+  title?: string;
+  description?: string;
+  detailed_explanation?: string;
   text: string;
   team: string;
   due: string;
@@ -117,14 +170,20 @@ const Regulations = () => {
   };
 
   const processTasksPayload = (tasksData: any[]) => {
-    const mappedActions: ActionPoint[] = tasksData.map((t: any, idx: number) => ({
-      id: idx + 1,
-      taskId: t.id,
-      text: t.title + (t.description ? ` — ${t.description}` : ''),
-      team: t.department || 'Compliance',
-      due: t.due_date || '14 days',
-      priority: t.priority || 'Medium'
-    }));
+    const mappedActions: ActionPoint[] = tasksData.map((t: any, idx: number) => {
+      const desc = t.detailed_explanation || t.description || t.details || '';
+      return {
+        id: idx + 1,
+        taskId: t.id,
+        title: t.title,
+        description: desc,
+        detailed_explanation: desc,
+        text: t.title + (desc ? ` — ${desc}` : ''),
+        team: t.department || 'Compliance',
+        due: t.due_date || t.due_days || '14 days',
+        priority: t.priority || 'Medium'
+      };
+    });
     setActionPoints(mappedActions);
 
     // Dynamic computation of affected teams strictly from live response
@@ -299,18 +358,82 @@ const Regulations = () => {
   const handleDistributeTasks = async () => {
     if (!currentRegId) return;
     setIsDistributing(true);
+
     try {
-      await api.post(`/regulations/${currentRegId}/distribute`);
-      alert(`Successfully distributed ${actionPoints.length} compliance action items to ${affectedTeams.length} departments!`);
+      // ── Phase 1: Hit the smart distribute endpoint ──────────────────────────
+      // This promotes existing DB tasks OR parses the summary JSON to insert fresh ones.
+      let distributedCount = 0;
+      try {
+        const res = await api.post<{ status: string; distributed_count?: number; created_count?: number }>(
+          `/regulations/${currentRegId}/distribute`
+        );
+        distributedCount = res.data.distributed_count ?? res.data.created_count ?? 0;
+      } catch (phase1Err: any) {
+        // A 422 means the summary had no parseable JSON and there are no DB tasks.
+        // Fall through to Phase 2 which sends the in-memory actionPoints.
+        if (phase1Err?.response?.status !== 422) {
+          throw phase1Err; // Re-throw unexpected errors (500, 403, etc.)
+        }
+        console.warn('[Distribute] Phase 1 returned 422 — falling back to bulk-distribute from in-memory tasks.');
+      }
+
+      // ── Phase 2 fallback: send in-memory actionPoints as a bulk payload ─────
+      // Runs when Phase 1 returned 422 (no DB tasks, no parseable summary JSON).
+      if (distributedCount === 0 && actionPoints.length > 0) {
+        const bulkPayload = {
+          regulation_id: currentRegId,
+          tasks: actionPoints.map((ap) => ({
+            title: ap.title || (ap.text.split(' — ')[0] || ap.text),
+            description: ap.detailed_explanation || ap.description || (ap.text.includes(' — ') ? ap.text.split(' — ').slice(1).join(' — ') : undefined),
+            detailed_explanation: ap.detailed_explanation || ap.description || (ap.text.includes(' — ') ? ap.text.split(' — ').slice(1).join(' — ') : undefined),
+            department: ap.team,
+            priority: ap.priority,
+            due_days: (() => {
+              // Convert "Jul 10" / "14 days" / raw number strings to integer due_days
+              if (!ap.due) return 14;
+              const asInt = parseInt(ap.due);
+              if (!isNaN(asInt)) return asInt;
+              // Try to parse date strings like "Jul 10"
+              try {
+                const parsed = new Date(`${ap.due} ${new Date().getFullYear()}`);
+                const diff = Math.round((parsed.getTime() - Date.now()) / 86_400_000);
+                return diff > 0 ? diff : 14;
+              } catch {
+                return 14;
+              }
+            })(),
+            regulation_id: currentRegId,
+          })),
+        };
+
+        const bulkRes = await api.post<{ status: string; created_count?: number }>(
+          '/regulations/bulk-distribute',
+          bulkPayload
+        );
+        distributedCount = bulkRes.data.created_count ?? actionPoints.length;
+      }
+
+      // ── Success: update UI ─────────────────────────────────────────────────
+      alert(
+        `✅ Successfully distributed ${distributedCount} compliance task${distributedCount !== 1 ? 's' : ''} ` +
+        `to ${affectedTeams.length} department${affectedTeams.length !== 1 ? 's' : ''}!\n\n` +
+        `Team workspaces are now updated — check the Task Tracker in each team's dashboard.`
+      );
       setView('upload');
       fetchRegulations();
     } catch (err: any) {
-      console.error('Error distributing tasks:', err);
-      alert('Failed to distribute tasks. Please check server status.');
+      console.error('[Distribute] Error:', err);
+      const detail = err?.response?.data?.detail;
+      alert(
+        detail
+          ? `Distribution failed: ${detail}`
+          : 'Failed to distribute tasks. Check the browser console and backend terminal for details.'
+      );
     } finally {
       setIsDistributing(false);
     }
   };
+
 
   const getStepStatus = (stepId: number) => {
     if (view === 'upload') {
@@ -568,7 +691,7 @@ const Regulations = () => {
                 </div>
               </div>
 
-              {/* AI Summary */}
+              {/* AI Summary — rendered as structured task cards */}
               <div className="bg-white/80 backdrop-blur-lg border border-white/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 flex flex-col h-[320px] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:border-indigo-500/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap size={18} className="text-blue-600" />
@@ -577,12 +700,53 @@ const Regulations = () => {
                     Live API Payload
                   </span>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto pr-2">
-                  <p className="text-[14px] text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {summary || "No analysis report generated."}
-                  </p>
-                </div>
+
+                {/* Render parsed task cards if summary is JSON; otherwise fall back to prose */}
+                {(() => {
+                  const parsedTasks = parseSummaryToTasks(summary);
+                  if (parsedTasks) {
+                    return (
+                      <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+                        {parsedTasks.map((t, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/70 hover:bg-white hover:border-blue-100 transition-colors"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-semibold text-gray-900 leading-snug">{t.title}</p>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                  <Building2 size={10} />
+                                  {t.department}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${priorityBadgeStyle(t.priority)}`}>
+                                  {t.priority} Priority
+                                </span>
+                                {t.due_days && (
+                                  <span className="text-[10px] text-gray-400">{t.due_days}d deadline</span>
+                                )}
+                              </div>
+                              {t.description && (
+                                <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">{t.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  // Fallback: plain prose (non-JSON or empty summary)
+                  return (
+                    <div className="flex-1 overflow-y-auto pr-2">
+                      <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        {summary || 'No analysis report generated.'}
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2 text-orange-600 font-medium text-[13px]">
                   <AlertTriangle size={16} />

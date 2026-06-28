@@ -78,6 +78,7 @@ const App = () => {
             <Route path="/teams/:teamId/workspace" element={<TeamWorkspace />} />
             <Route path="/team-workspace" element={<TeamWorkspace />} />
             <Route path="/task-detail" element={<TaskDetail />} />
+            <Route path="/tasks/:taskId" element={<TaskDetail />} />
             <Route path="/action-points" element={<ActionPoints />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/discussions" element={<Discussions />} />

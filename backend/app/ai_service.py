@@ -115,14 +115,17 @@ class LocalOfflineAIService(AIServiceInterface):
 
     OLLAMA_MODEL = "llama3.2"          # exact tag from: ollama list
     COMPLIANCE_PROMPT_TEMPLATE = (
-        "You are a banking compliance AI assistant. "
+        "You are a Senior Banking Compliance AI Specialist. "
         "Analyze the following regulatory document text carefully. "
         "Identify all mandatory compliance action items. "
-        "For each action item, specify: (1) the task title, (2) which department must handle it "
-        "(choose from: IT Security, Risk Management, Compliance, Legal, Retail Banking), "
-        "(3) priority (High/Medium/Low), and (4) suggested due date in days from today.\n\n"
+        "For each action item, specify:\n"
+        "1. title: A concise, imperative task title (max 80 chars).\n"
+        "2. department: Which bank department must handle it (choose exactly one from: IT Security, Risk Management, Compliance, Legal, Retail Banking).\n"
+        "3. priority: High (due <= 21 days), Medium (22-45 days), or Low (> 45 days).\n"
+        "4. due_days: Suggested integer deadline in days from today.\n"
+        "5. detailed_explanation: A 3-4 sentence, highly professional, thorough breakdown of exactly HOW the assigned employee should execute and fulfill this regulatory compliance mandate based on the PDF requirements.\n\n"
         "Regulatory text:\n\n{text}\n\n"
-        "Respond with a structured JSON array of tasks."
+        "Respond with ONLY a structured JSON array of task objects matching these keys."
     )
 
     def __init__(self):
@@ -244,7 +247,7 @@ class LocalOfflineAIService(AIServiceInterface):
         Robust JSON extraction stripping markdown backticks, tags, and conversational text.
         Prints EXACT raw LLM output to terminal if parsing fails.
         """
-        import json, re
+        import json, re, ast
         try:
             cleaned = raw.strip()
             # Strip markdown code blocks like ```json ... ``` or ``` ... ```
@@ -252,19 +255,31 @@ class LocalOfflineAIService(AIServiceInterface):
             if code_block_match:
                 cleaned = code_block_match.group(1).strip()
             
-            # Find the outermost JSON array [...]
-            array_match = re.search(r"\[\s*\{.*?\}\s*\]", cleaned, re.DOTALL)
-            if not array_match:
-                array_match = re.search(r"\[.*?\]", cleaned, re.DOTALL)
-            
-            if array_match:
-                candidate = array_match.group()
-                parsed = json.loads(candidate)
-                if isinstance(parsed, list):
-                    return parsed
+            # Find the outermost JSON array [...] cleanly
+            start_idx = cleaned.find('[')
+            end_idx = cleaned.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                candidate = cleaned[start_idx:end_idx+1]
+            else:
+                candidate = cleaned
+
+            # Remove trailing commas before closing brackets/braces (common LLM artifact)
+            candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
+
+            parsed = json.loads(candidate)
+            if isinstance(parsed, list):
+                return parsed
         except Exception as err:
             print(f"\n[JSON PARSE ERROR] Failed to parse LLM JSON: {err}", flush=True)
             print(f"=== EXACT RAW LLM OUTPUT ===\n{raw}\n============================\n", flush=True)
+            try:
+                # Secondary fallback using Python literal eval (handles single quotes, etc.)
+                if 'candidate' in locals():
+                    parsed_ast = ast.literal_eval(candidate)
+                    if isinstance(parsed_ast, list):
+                        return parsed_ast
+            except Exception:
+                pass
             return self._deterministic_pipeline_fallback()["tasks"]
 
         print(f"\n[JSON PARSE ERROR] Could not locate JSON array in LLM response.", flush=True)
@@ -290,11 +305,41 @@ class LocalOfflineAIService(AIServiceInterface):
             "model": "deterministic_fallback",
             "report": self._deterministic_analysis_fallback(),
             "tasks": [
-                {"title": "Update Video-CIP architecture per RBI technical specification", "department": "IT Security",      "priority": "High",   "due_days": 15},
-                {"title": "Conduct re-KYC verification for dormant corporate accounts",    "department": "Compliance",       "priority": "High",   "due_days": 21},
-                {"title": "Revise Customer Onboarding SOP with beneficial ownership rules","department": "Legal",            "priority": "Medium", "due_days": 30},
-                {"title": "Deploy AML e-learning module for all branch staff",             "department": "Risk Management",  "priority": "Medium", "due_days": 45},
-                {"title": "Review retail loan product disclosures for compliance",         "department": "Retail Banking",   "priority": "Low",    "due_days": 60},
+                {
+                    "title": "Update Video-CIP architecture per RBI technical specification",
+                    "department": "IT Security",
+                    "priority": "High",
+                    "due_days": 15,
+                    "detailed_explanation": "Review the latest Reserve Bank of India technical guidelines for Video Customer Identification Process (V-CIP). Upgrade the infrastructure encryption and bandwidth management protocols to prevent session drops during high-concurrency periods. Document and conduct end-to-end security audits before deploying the revised architecture to production."
+                },
+                {
+                    "title": "Conduct re-KYC verification for dormant corporate accounts",
+                    "department": "Compliance",
+                    "priority": "High",
+                    "due_days": 21,
+                    "detailed_explanation": "Extract the comprehensive list of corporate bank accounts flagged as dormant over the preceding 24 months. Issue formal re-KYC notifications to account holders requesting updated beneficial ownership disclosures and board resolutions. Freeze debit transactions on accounts failing to provide verified compliance documentation within the statutory notice window."
+                },
+                {
+                    "title": "Revise Customer Onboarding SOP with beneficial ownership rules",
+                    "department": "Legal",
+                    "priority": "Medium",
+                    "due_days": 30,
+                    "detailed_explanation": "Draft updated legal addendums for standard operating procedures governing institutional customer onboarding. Incorporate explicit identification thresholds for ultimate beneficial owners (UBOs) in compliance with prevention of money laundering rules. Ensure all branch legal officers are briefed on the revised contract documentation templates."
+                },
+                {
+                    "title": "Deploy AML e-learning module for all branch staff",
+                    "department": "Risk Management",
+                    "priority": "Medium",
+                    "due_days": 45,
+                    "detailed_explanation": "Coordinate with HR and IT to roll out the updated Anti-Money Laundering (AML) interactive e-learning curriculum across all branch portals. Mandate 100% course completion and certification for frontline staff and relationship managers within the designated timeframe. Generate compliance tracking reports weekly for executive oversight."
+                },
+                {
+                    "title": "Review retail loan product disclosures for compliance",
+                    "department": "Retail Banking",
+                    "priority": "Low",
+                    "due_days": 60,
+                    "detailed_explanation": "Audit all retail lending promotional materials, key facts statements (KFS), and loan agreements to verify transparency in interest rate and fee disclosures. Harmonize fee schedules with newly promulgated consumer protection regulations. Submit verified disclosure templates to internal audit for sign-off prior to quarterly print distribution."
+                },
             ],
         }
 

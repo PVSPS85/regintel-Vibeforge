@@ -46,6 +46,7 @@ interface TaskInfo {
   due_date?: string;
   status: string;
   assigned_to_user?: string;
+  created_at?: string;
 }
 
 const PALETTES = [
@@ -408,7 +409,22 @@ export default function TeamWorkspace() {
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {tasks.map((t) => {
+                  {[...tasks].sort((a, b) => {
+                    const getStatusRank = (status: string) => {
+                      const lower = status?.toLowerCase() || '';
+                      if (lower === 'pending') return 0;
+                      if (lower === 'in progress' || lower === 'in_progress') return 1;
+                      if (lower === 'completed') return 2;
+                      if (lower === 'cancelled') return 3;
+                      return 4;
+                    };
+                    const rankA = getStatusRank(a.status);
+                    const rankB = getStatusRank(b.status);
+                    if (rankA !== rankB) return rankA - rankB;
+                    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return timeB - timeA;
+                  }).map((t) => {
                     const done = t.status === 'Completed';
                     return (
                       <div
@@ -433,7 +449,12 @@ export default function TeamWorkspace() {
                             <span className="text-[10px] font-mono text-gray-400">Task</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ring-1 ring-inset ${priorityBg(t.priority)}`}>{t.priority}</span>
                           </div>
-                          <p className={`text-sm font-semibold ${done ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{t.title}</p>
+                          <p
+                            onClick={() => navigate(`/tasks/${t.id}`)}
+                            className={`text-sm font-semibold cursor-pointer hover:text-blue-600 transition-colors ${done ? 'text-gray-400 line-through' : 'text-gray-900'}`}
+                          >
+                            {t.title}
+                          </p>
                           <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
                             {t.due_date && <span className="flex items-center gap-1"><Calendar size={11} />Due: {t.due_date}</span>}
                           </div>

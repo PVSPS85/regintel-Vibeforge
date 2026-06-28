@@ -1,0 +1,40 @@
+# ==============================================================================
+# RegIntel VibeForge Monorepo Unified Requirements
+# ==============================================================================
+# Installing this file into the root virtual environment (.venv) ensures that
+# VS Code / Pylance resolves all imports across both `backend` and `ai-agents`
+# without any red import squiggly lines.
+# ==============================================================================
+
+# Core Web Framework & Server
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.1
+python-multipart>=0.0.9
+httpx>=0.27.0
+
+# Database & ORM (Backend)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+supabase>=2.0.0
+
+# Authentication & Security (Backend)
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+python-jose[cryptography]>=3.3.0
+email-validator>=2.0.0
+
+# Configuration & Validation
+pydantic>=2.7.4
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.1
+
+# AI & Vector Database (AI Agents & Backend processing)
+crewai==0.35.0
+langchain-google-genai==0.0.11
+chromadb==0.4.24
+
+# Document Parsing
+pymupdf>=1.24.5
+
+# Testing
+pytest>=8.0.0

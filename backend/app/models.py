@@ -137,6 +137,14 @@ class Task(Base):
     branch = relationship("Branch", foreign_keys=[branch_id], back_populates="tasks")
     regulation = relationship("Regulation")
 
+    @property
+    def detailed_explanation(self):
+        return self.description
+
+    @detailed_explanation.setter
+    def detailed_explanation(self, value):
+        self.description = value
+
 class TransferRequest(Base):
     __tablename__ = "transfer_requests"
 

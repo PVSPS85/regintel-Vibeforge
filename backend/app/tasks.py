@@ -15,6 +15,7 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
+    detailed_explanation: Optional[str] = None
     assigned_to_user: Optional[UUID] = None
     assigned_to_team: Optional[UUID] = None
     status: Optional[models.TaskStatus] = models.TaskStatus.PENDING
@@ -27,6 +28,7 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    detailed_explanation: Optional[str] = None
     assigned_to_user: Optional[UUID] = None
     assigned_to_team: Optional[UUID] = None
     status: Optional[models.TaskStatus] = None

@@ -2,44 +2,158 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
-  Download,
-  FileSpreadsheet,
-  FileText,
+  Loader2,
   MessageSquare,
   Send,
-  Upload,
+  AlertTriangle,
+  CalendarDays,
+  Building2,
+  Flag,
+  User,
+  Zap,
 } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import api from '../../lib/api';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const ATTACHMENTS = [
-  { id: 'a1', name: 'KYC_Dormant_Accounts_List_Q2.pdf', size: '1.8 MB', type: 'PDF', uploadedBy: 'Priya Sharma', uploadedAt: '22 Jun 2026' },
-  { id: 'a2', name: 'Re-KYC_Process_Guidelines_RBI.pdf', size: '3.2 MB', type: 'PDF', uploadedBy: 'Rohit Pal', uploadedAt: '20 Jun 2026' },
-  { id: 'a3', name: 'Account_Activity_Tracker.xlsx', size: '540 KB', type: 'XLSX', uploadedBy: 'Aisha Mehta', uploadedAt: '19 Jun 2026' },
-];
+interface LiveTask {
+  id: string;
+  title: string;
+  description?: string;
+  detailed_explanation?: string;
+  status: string;         // "Pending" | "In Progress" | "Completed" | "Cancelled"
+  priority: string;       // "Low" | "Medium" | "High"
+  due_date?: string;
+  branch_id?: string;
+  assigned_to_team?: string;
+  assigned_to_user?: string;
+  regulation_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
-const COMMENTS = [
-  { id: 'c1', name: 'Rohit Pal', initials: 'RP', color: 'bg-indigo-600', text: 'The dormant accounts list has been cross-referenced with our CIF database. 214 accounts need immediate re-KYC documentation.', time: '22 Jun, 9:42 AM' },
-  { id: 'c2', name: 'Priya Sharma', initials: 'PS', color: 'bg-rose-500', text: 'Uploaded the updated list. Please review the flagged entries in column G — those need branch manager sign-off before proceeding.', time: '22 Jun, 11:15 AM' },
-  { id: 'c3', name: 'Aisha Mehta', initials: 'AM', color: 'bg-[#030213]', text: 'I\'ve reviewed the RBI guidelines. We need to complete re-KYC within 30 days or flag accounts for freezing. This is Priority 1.', time: 'Today, 9:00 AM' },
-];
+interface TeamData {
+  id: string;
+  name: string;
+}
 
-const HISTORY = [
-  { id: 'h1', event: 'Task created', actor: 'Rohit Pal', time: '18 Jun 2026 · 10:00 AM', icon: <CheckCircle2 size={13} className="text-blue-500" /> },
-  { id: 'h2', event: 'Assigned to Priya Sharma', actor: 'Rohit Pal', time: '18 Jun 2026 · 10:05 AM', icon: <CheckCircle2 size={13} className="text-purple-500" /> },
-  { id: 'h3', event: 'Status changed to In Progress', actor: 'Priya Sharma', time: '20 Jun 2026 · 9:30 AM', icon: <Clock size={13} className="text-amber-500" /> },
-  { id: 'h4', event: 'Attachment added: KYC_Dormant_Accounts_List_Q2.pdf', actor: 'Priya Sharma', time: '22 Jun 2026 · 11:15 AM', icon: <FileText size={13} className="text-emerald-500" /> },
-];
+interface UserData {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const formatDate = (raw?: string) => {
+  if (!raw) return '—';
+  try {
+    return new Date(raw).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    });
+  } catch {
+    return raw;
+  }
+};
+
+const daysUntil = (raw?: string): string => {
+  if (!raw) return '';
+  try {
+    const diff = Math.ceil((new Date(raw).getTime() - Date.now()) / 86_400_000);
+    if (diff < 0) return `${Math.abs(diff)} days overdue`;
+    if (diff === 0) return 'Due today';
+    return `${diff} day${diff !== 1 ? 's' : ''} left`;
+  } catch {
+    return '';
+  }
+};
+
+const priorityStyle = (p: string) => {
+  switch (p?.toUpperCase()) {
+    case 'HIGH':   return 'bg-red-50 text-red-700 border-red-100';
+    case 'LOW':    return 'bg-gray-50 text-gray-600 border-gray-200';
+    default:       return 'bg-amber-50 text-amber-700 border-amber-100';
+  }
+};
+
+const statusStyle = (s: string) => {
+  const lower = s?.toLowerCase();
+  if (lower === 'completed') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (lower === 'in progress' || lower === 'in_progress') return 'bg-blue-50 text-blue-700 border-blue-100';
+  if (lower === 'cancelled') return 'bg-red-50 text-red-600 border-red-100';
+  return 'bg-amber-50 text-amber-700 border-amber-100';
+};
+
+const statusLabel = (s: string) => {
+  const lower = s?.toLowerCase();
+  if (lower === 'in progress' || lower === 'in_progress') return 'IN PROGRESS';
+  if (lower === 'completed') return 'COMPLETED';
+  if (lower === 'cancelled') return 'CANCELLED';
+  return 'PENDING';
+};
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const TaskDetail = () => {
   const navigate = useNavigate();
-  const [comment, setComment] = useState('');
-  const [comments, setComments] = useState(COMMENTS);
+  const { taskId } = useParams<{ taskId: string }>();
 
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [task, setTask]         = useState<LiveTask | null>(null);
+  const [teams, setTeams]       = useState<TeamData[]>([]);
+  const [users, setUsers]       = useState<UserData[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [comment, setComment]   = useState('');
+  const [comments, setComments] = useState<Array<{ id: string; name: string; initials: string; color: string; text: string; time: string }>>([]);
+
+  // ── Fetch live task + teams + users from backend ───────────────────────────
+  const fetchTaskAndMetadata = useCallback(async () => {
+    if (!taskId) {
+      setError('No task ID provided in the URL.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch task along with teams and users for resolving UUIDs to readable names
+      const [taskRes, teamsRes, usersRes] = await Promise.all([
+        api.get<LiveTask>(`/tasks/${taskId}`),
+        api.get<TeamData[]>('/teams/').catch(() => ({ data: [] })),
+        api.get<UserData[]>('/users/').catch(() => ({ data: [] })),
+      ]);
+
+      setTask(taskRes.data);
+      setTeams(teamsRes.data || []);
+      setUsers(usersRes.data || []);
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      setError(detail ?? `Could not load task ${taskId}. It may have been removed or you may not have access.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    fetchTaskAndMetadata();
+  }, [fetchTaskAndMetadata]);
+
+  // ── Mark task complete (PATCH) ─────────────────────────────────────────────
+  const handleMarkComplete = async () => {
+    if (!taskId || !task) return;
+    try {
+      const res = await api.patch<LiveTask>(`/tasks/${taskId}`, { status: 'Completed' });
+      setTask(res.data);
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? 'Failed to mark task as complete.');
+    }
+  };
+
+  // ── Comments (local state) ─────────────────────────────────────────────────
   const handleSendComment = () => {
     const trimmed = comment.trim();
     if (!trimmed) return;
@@ -48,7 +162,7 @@ const TaskDetail = () => {
       {
         id: `c${Date.now()}`,
         name: 'You',
-        initials: 'AM',
+        initials: 'ME',
         color: 'bg-gray-700',
         text: trimmed,
         time: 'Just now',
@@ -57,10 +171,50 @@ const TaskDetail = () => {
     setComment('');
   };
 
+  // ── Loading state ──────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#f9fafb]">
+        <div className="flex items-center gap-3 text-gray-400">
+          <Loader2 size={20} className="animate-spin" />
+          <span className="text-[14px] font-medium">Loading live task details from Supabase...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error / Not Found ──────────────────────────────────────────────────────
+  if (error || !task) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#f9fafb]">
+        <div className="bg-white rounded-xl p-8 border border-red-100 text-center max-w-sm">
+          <AlertTriangle size={32} className="text-red-400 mx-auto mb-3" />
+          <p className="text-[14px] font-semibold text-gray-800 mb-1">Task Not Found</p>
+          <p className="text-[12px] text-gray-500 mb-5">{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-[13px] font-bold cursor-pointer"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Resolve DB names from UUIDs ────────────────────────────────────────────
+  const assignedTeamName = teams.find((t) => t.id === task.assigned_to_team)?.name || 'Compliance Department';
+  const assignedUserName = users.find((u) => u.id === task.assigned_to_user)?.name || 'Assigned Compliance Officer';
+  
+  const due = formatDate(task.due_date);
+  const daysLeft = daysUntil(task.due_date);
+  const isOverdue = daysLeft.includes('overdue');
+
+  // ── Main render ────────────────────────────────────────────────────────────
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f9fafb] font-sans text-gray-900">
 
-      {/* ── HEADER ── */}
+      {/* ── HEADER & TITLE ── */}
       <div>
         <button
           onClick={() => navigate(-1)}
@@ -71,93 +225,94 @@ const TaskDetail = () => {
         </button>
 
         <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-6">
+          {/* Status + Priority chips */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border-rose-100">High Priority</span>
-            <span className="px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border-blue-100">In Progress</span>
+            <span className={`px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider ${priorityStyle(task.priority)}`}>
+              {task.priority} Priority
+            </span>
+            <span className={`px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider ${statusStyle(task.status)}`}>
+              {statusLabel(task.status)}
+            </span>
+            {isOverdue && (
+              <span className="px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border-red-200 flex items-center gap-1">
+                <AlertTriangle size={10} /> Overdue
+              </span>
+            )}
           </div>
-          <h1 className="text-xl font-bold text-gray-900 leading-snug max-w-2xl">
-            Conduct re-KYC for all dormant accounts flagged in Q2 2026 audit report
-          </h1>
-          <p className="text-[13px] text-gray-500 mt-2">IT Security Team · Bengaluru — MG Road Branch · Due 28 Jun 2026</p>
 
-          <div className="mt-5">
-            <div className="flex justify-between mb-1.5">
-              <span className="text-[12px] font-semibold text-gray-500">Completion Progress</span>
-              <span className="text-[12px] font-bold text-gray-900">60%</span>
+          {/* Real Task Title */}
+          <h1 className="text-2xl font-extrabold text-gray-900 leading-snug max-w-3xl">
+            {task.title}
+          </h1>
+
+          {/* Prominent Compliance Action Plan / AI Mandate Instructions Section */}
+          <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/50 rounded-xl p-5 border border-blue-100 mt-5 shadow-sm">
+            <div className="flex items-center gap-2 text-blue-700 font-bold text-[13px] mb-2 uppercase tracking-wider">
+              <Zap size={16} className="text-blue-600 shrink-0" />
+              Compliance Action Plan & AI Execution Mandate
             </div>
-            <div className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
-              <div className="h-full rounded-full bg-blue-600" style={{ width: '60%' }} />
-            </div>
+            <p className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap font-medium">
+              {task.detailed_explanation || task.description || "Review and execute mandatory compliance actions extracted from the uploaded circular."}
+            </p>
           </div>
+
+          <p className="text-[13px] text-gray-400 mt-4">
+            Assigned to: <span className="font-semibold text-gray-700">{assignedTeamName}</span>
+            <span className="mx-2">·</span>
+            Due: {due}
+            {daysLeft && (
+              <span className={`ml-2 font-semibold ${isOverdue ? 'text-red-500' : 'text-amber-500'}`}>
+                ({daysLeft})
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
-      {/* ── 2-COLUMN CONTENT GRID ── */}
+      {/* ── 2-COLUMN GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── LEFT COL (main) ── */}
+        {/* ── LEFT COL: Comments & Collaboration ── */}
         <div className="lg:col-span-2 space-y-6">
-
-          {/* Attachments */}
-          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-[15px] font-bold text-gray-900">Attachments ({ATTACHMENTS.length})</h2>
-              <button onClick={() => alert('Route connected: Action')}  className="h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
-                <Upload size={13} />
-                Upload
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              {ATTACHMENTS.map((file) => (
-                <div key={file.id} className="flex items-center gap-3.5 p-3.5 bg-[#f9fafb] rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${file.type === 'PDF' ? 'bg-red-50' : 'bg-emerald-50'}`}>
-                    {file.type === 'PDF'
-                      ? <FileText size={20} className="text-red-500" />
-                      : <FileSpreadsheet size={20} className="text-emerald-600" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-gray-900 truncate">{file.name}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">{file.size} · {file.type} · Uploaded by {file.uploadedBy} · {file.uploadedAt}</p>
-                  </div>
-                  <button onClick={() => alert('Route connected: Action')}  className="flex items-center gap-1.5 text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer shrink-0">
-                    <Download size={13} />
-                    Download
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Comments */}
           <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
               <MessageSquare size={16} className="text-gray-400" />
-              <h2 className="text-[15px] font-bold text-gray-900">Comments ({comments.length})</h2>
+              <h2 className="text-[15px] font-bold text-gray-900">Activity & Comments ({comments.length})</h2>
             </div>
-            <div className="p-4 space-y-4">
-              {comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0 ${c.color}`}>{c.initials}</div>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-[13px] font-bold text-gray-900">{c.name}</span>
-                      <span className="text-[11px] text-gray-400">{c.time}</span>
+
+            <div className="p-4 space-y-4 min-h-[120px]">
+              {comments.length === 0 ? (
+                <p className="text-[13px] text-gray-400 italic text-center py-6">
+                  No comments or updates posted yet. Assigned officers can log progress notes below.
+                </p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="flex gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0 ${c.color}`}>
+                      {c.initials}
                     </div>
-                    <p className="text-[13px] text-gray-700 leading-relaxed">{c.text}</p>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-[13px] font-bold text-gray-900">{c.name}</span>
+                        <span className="text-[11px] text-gray-400">{c.time}</span>
+                      </div>
+                      <p className="text-[13px] text-gray-700 leading-relaxed">{c.text}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-            {/* Comment Input */}
+
+            {/* Comment input */}
             <div className="px-4 pb-4 pt-2 border-t border-gray-50">
               <div className="flex items-center gap-2 bg-[#f3f3f5] rounded-full px-4 py-2 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-white text-[9px] font-bold shrink-0">AM</div>
+                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-white text-[9px] font-bold shrink-0">ME</div>
                 <input
                   type="text"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSendComment(); }}
-                  placeholder="Write a comment..."
+                  placeholder="Post progress update or comment..."
                   className="flex-1 bg-transparent text-[13px] text-gray-900 placeholder:text-gray-400 outline-none"
                 />
                 <button
@@ -172,68 +327,87 @@ const TaskDetail = () => {
           </div>
         </div>
 
-        {/* ── RIGHT COL (sidebar) ── */}
+        {/* ── RIGHT COL: Real Database Metadata ── */}
         <div className="space-y-5">
 
-          {/* Task Details */}
+          {/* Task Details Metadata */}
           <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
-            <h3 className="text-[14px] font-bold text-gray-900 mb-4">Task Details</h3>
-            <div className="space-y-3.5">
-              {[
-                { label: 'Regulation Ref', value: 'RBI/2026/KYC-04', highlight: false },
-                { label: 'Deadline', value: '28 Jun 2026 · 4 days left', highlight: true },
-                { label: 'Branch', value: 'Bengaluru — MG Road', highlight: false },
-                { label: 'Assigned Team', value: 'IT Security', highlight: false },
-              ].map((detail) => (
-                <div key={detail.label}>
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{detail.label}</p>
-                  <p className={`text-[13px] font-semibold ${detail.highlight ? 'text-amber-600' : 'text-gray-800'}`}>{detail.value}</p>
+            <h3 className="text-[14px] font-bold text-gray-900 mb-4">Task Metadata</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CalendarDays size={15} className="text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Due Date</p>
+                  <p className={`text-[13px] font-semibold ${isOverdue ? 'text-red-600' : 'text-gray-800'}`}>
+                    {due}{daysLeft ? ` · ${daysLeft}` : ''}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Assigned To */}
-          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
-            <h3 className="text-[14px] font-bold text-gray-900 mb-3">Assigned To</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-500 flex items-center justify-center text-white text-[12px] font-bold shrink-0">PS</div>
-              <div>
-                <p className="text-[14px] font-bold text-gray-900">Priya Sharma</p>
-                <p className="text-[11px] text-gray-400">Compliance Associate · IT Security</p>
               </div>
-            </div>
-          </div>
 
-          {/* Completion Request */}
-          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
-            <h3 className="text-[14px] font-bold text-gray-900 mb-3">Completion Request</h3>
-            <p className="text-[12px] text-gray-500 mb-3">Submit a completion request once all re-KYC documents are collected and verified.</p>
-            <button onClick={() => alert('Route connected: Action')}  className="w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-              <CheckCircle2 size={15} />
-              Request Completion
-            </button>
-          </div>
+              <div className="flex items-start gap-3">
+                <Flag size={15} className="text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Priority</p>
+                  <p className="text-[13px] font-semibold text-gray-800">{task.priority}</p>
+                </div>
+              </div>
 
-          {/* Task History */}
-          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
-            <h3 className="text-[14px] font-bold text-gray-900 mb-4">Task History</h3>
-            <div className="relative">
-              <div className="absolute left-[11px] top-2 bottom-2 w-px bg-gray-100" />
-              <div className="space-y-4">
-                {HISTORY.map((h) => (
-                  <div key={h.id} className="flex items-start gap-3 relative">
-                    <div className="w-6 h-6 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center shrink-0 z-10">{h.icon}</div>
-                    <div>
-                      <p className="text-[12px] font-semibold text-gray-800 leading-snug">{h.event}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">by {h.actor}</p>
-                      <p className="text-[11px] text-gray-400">{h.time}</p>
-                    </div>
+              <div className="flex items-start gap-3">
+                <Building2 size={15} className="text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Assigned Team</p>
+                  <p className="text-[13px] font-semibold text-gray-800">
+                    {assignedTeamName}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <User size={15} className="text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Assigned Officer</p>
+                  <p className="text-[13px] font-semibold text-gray-800">{assignedUserName}</p>
+                </div>
+              </div>
+
+              {task.created_at && (
+                <div className="flex items-start gap-3">
+                  <Clock size={15} className="text-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Created</p>
+                    <p className="text-[13px] font-semibold text-gray-800">{formatDate(task.created_at)}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Mark Complete Action */}
+          {task.status !== 'Completed' && task.status !== 'Cancelled' && (
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.08)] shadow-sm p-5">
+              <h3 className="text-[14px] font-bold text-gray-900 mb-2">Fulfillment</h3>
+              <p className="text-[12px] text-gray-500 mb-3">
+                Mark this mandate as completed once the department has executed all required actions.
+              </p>
+              <button
+                onClick={handleMarkComplete}
+                className="w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
+              >
+                <CheckCircle2 size={15} />
+                Mark as Complete
+              </button>
+            </div>
+          )}
+
+          {task.status === 'Completed' && (
+            <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 flex items-center gap-3">
+              <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-[13px] font-bold text-emerald-800">Task Completed</p>
+                <p className="text-[11px] text-emerald-600">This regulatory obligation has been verified and closed.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

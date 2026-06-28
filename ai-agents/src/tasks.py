@@ -48,17 +48,18 @@ generate_json_tasks_task: Task = Task(
         "Convert the numbered obligation list from the previous step into a "
         "JSON array of compliance task objects.\n\n"
         "Required keys per object:\n"
-        "  - title       : string, imperative, max 80 chars\n"
-        "  - department  : exactly one of: IT Security, Risk Management, Compliance, Legal, Retail Banking\n"
-        "  - priority    : High (due_days ≤ 21), Medium (22–45), Low (> 45)\n"
-        "  - description : one-sentence description of what must be done\n"
-        "  - due_days    : integer, days from today until deadline\n\n"
+        "  - title                : string, imperative, max 80 chars\n"
+        "  - department           : exactly one of: IT Security, Risk Management, Compliance, Legal, Retail Banking\n"
+        "  - priority             : High (due_days ≤ 21), Medium (22–45), Low (> 45)\n"
+        "  - detailed_explanation : a 3-4 sentence, highly professional breakdown of exactly HOW the employee should execute this compliance task based on regulatory requirements\n"
+        "  - description          : one-sentence description of what must be done\n"
+        "  - due_days             : integer, days from today until deadline\n\n"
         "Output ONLY the JSON array. No markdown code fences. No comments. "
         "Ensure the JSON is valid and parseable by Python's json.loads()."
     ),
     expected_output=(
         '[{"title": "...", "department": "...", "priority": "High", '
-        '"description": "...", "due_days": 14}, ...]'
+        '"detailed_explanation": "...", "description": "...", "due_days": 14}, ...]'
     ),
     agent=fast_mapping_agent,
     context=[extract_obligations_task],

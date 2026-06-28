@@ -4,11 +4,14 @@ import {
   Circle,
   Clock,
   Filter,
+  Loader2,
   Search,
   User,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import api from '../../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,60 +29,7 @@ interface ActionPoint {
   assigneeType: 'user' | 'team';
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_TASKS: ActionPoint[] = [
-  {
-    id: 'AP-1042',
-    title: 'Review KYC Documentation for High-Value Accounts',
-    description: 'Verify missing identity documents for 14 flagged corporate accounts in the Fort Branch before Q2 audit.',
-    priority: 'High',
-    dueDate: 'Today',
-    status: 'In Progress',
-    assignedTo: 'Vikram Nair',
-    assigneeType: 'user',
-  },
-  {
-    id: 'AP-1043',
-    title: 'Implement 2FA on Internal Portals',
-    description: 'Roll out mandatory two-factor authentication for all branch employees accessing the core banking system.',
-    priority: 'High',
-    dueDate: 'Tomorrow',
-    status: 'Pending',
-    assignedTo: 'IT Security Team',
-    assigneeType: 'team',
-  },
-  {
-    id: 'AP-1044',
-    title: 'Update Branch AML Procedures',
-    description: 'Revise local anti-money laundering guidelines to reflect the latest RBI circular.',
-    priority: 'Medium',
-    dueDate: '24 Jun 2026',
-    status: 'Pending',
-    assignedTo: 'Compliance Core',
-    assigneeType: 'team',
-  },
-  {
-    id: 'AP-1045',
-    title: 'Submit Monthly Compliance Report',
-    description: 'Compile and submit the consolidated compliance rating report to the regional head office.',
-    priority: 'High',
-    dueDate: '30 Jun 2026',
-    status: 'Completed',
-    assignedTo: 'Arjun Mehta',
-    assigneeType: 'user',
-  },
-  {
-    id: 'AP-1046',
-    title: 'Employee Training: Phishing Awareness',
-    description: 'Ensure all branch staff complete the mandatory Q2 cybersecurity training module.',
-    priority: 'Low',
-    dueDate: '15 Jul 2026',
-    status: 'Pending',
-    assignedTo: 'Fort Branch General',
-    assigneeType: 'team',
-  },
-];
+// ─── Live Data Fetching Helpers ───────────────────────────────────────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -108,23 +58,72 @@ const getStatusStyles = (status: Status) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ActionPoints = () => {
-  const [tasks, setTasks] = useState<ActionPoint[]>(MOCK_TASKS);
+  const navigate = useNavigate();
+  const [tasks, setTasks] = useState<ActionPoint[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status | 'All'>('All');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'All'>('All');
 
-  const toggleTaskStatus = (id: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === id) {
+  useEffect(() => {
+    const fetchLiveActionPoints = async () => {
+      setLoading(true);
+      try {
+        const [tasksRes, teamsRes, usersRes] = await Promise.all([
+          api.get('/tasks/'),
+          api.get('/teams/').catch(() => ({ data: [] })),
+          api.get('/users/').catch(() => ({ data: [] })),
+        ]);
+
+        const teamMap = new Map<string, string>((teamsRes.data || []).map((t: any) => [String(t.id), String(t.name)]));
+        const userMap = new Map<string, string>((usersRes.data || []).map((u: any) => [String(u.id), String(u.name)]));
+
+        const liveTasks: ActionPoint[] = (tasksRes.data || []).map((t: any) => {
+          let assignedTo = 'Unassigned';
+          let assigneeType: 'user' | 'team' = 'team';
+          if (t.assigned_to_team && teamMap.has(String(t.assigned_to_team))) {
+            assignedTo = teamMap.get(String(t.assigned_to_team)) || 'Team';
+            assigneeType = 'team';
+          } else if (t.assigned_to_user && userMap.has(String(t.assigned_to_user))) {
+            assignedTo = userMap.get(String(t.assigned_to_user)) || 'Officer';
+            assigneeType = 'user';
+          }
+
           return {
-            ...task,
-            status: task.status === 'Completed' ? 'Pending' : 'Completed',
+            id: t.id,
+            title: t.title || 'Compliance Mandate',
+            description: t.detailed_explanation || t.description || 'Mandatory regulatory compliance obligation.',
+            priority: (t.priority as Priority) || 'Medium',
+            dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'ASAP',
+            status: (t.status as Status) || 'Pending',
+            assignedTo,
+            assigneeType,
           };
-        }
-        return task;
-      })
-    );
+        });
+
+        setTasks(liveTasks);
+      } catch (err) {
+        console.error('Failed to load live action points:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveActionPoints();
+  }, []);
+
+  const toggleTaskStatus = async (id: string) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'Completed' ? 'Pending' : 'Completed';
+    try {
+      await api.patch(`/tasks/${id}`, { status: nextStatus });
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
+      );
+    } catch {
+      alert('Could not update status on Supabase.');
+    }
   };
 
   const filteredTasks = tasks.filter((task) => {
@@ -208,7 +207,16 @@ const ActionPoints = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredTasks.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 size={24} className="animate-spin text-indigo-600" />
+                      <span className="text-[13px] font-medium">Loading compliance tasks...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
                   const isCompleted = task.status === 'Completed';
                   return (
@@ -237,18 +245,22 @@ const ActionPoints = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[12px] font-mono font-medium text-gray-400 bg-gray-100 px-1.5 rounded">
-                              {task.id}
+                            <span className="text-[11px] font-mono font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[80px]">
+                              {task.id.slice(0, 8)}...
                             </span>
                             <span
-                              className={`text-[14px] font-bold ${
+                              onClick={() => navigate(`/tasks/${task.id}`)}
+                              className={`text-[14px] font-bold cursor-pointer hover:text-blue-600 transition-colors ${
                                 isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'
                               }`}
                             >
                               {task.title}
                             </span>
                           </div>
-                          <p className="text-[13px] text-gray-500 leading-snug line-clamp-2 pr-4">
+                          <p
+                            onClick={() => navigate(`/tasks/${task.id}`)}
+                            className="text-[13px] text-gray-500 leading-snug line-clamp-2 pr-4 cursor-pointer hover:text-gray-700"
+                          >
                             {task.description}
                           </p>
                         </div>
