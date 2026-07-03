@@ -6,26 +6,30 @@
 
 /* ─── Additional tokens ──────────────────────────────────────────────────── */
 :root {
-  --topbar-height:    60px;
-  --topbar-bg:        rgba(255, 255, 255, 0.6);
-  --topbar-border:    rgba(255, 255, 255, 0.4);
-  --topbar-shadow:    0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --topbar-height: 60px;
+  --topbar-bg: rgba(255, 255, 255, 0.6);
+  --topbar-border: rgba(255, 255, 255, 0.4);
+  --topbar-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 
-  --input-bg:         #f9fafb;
-  --input-border:     #e5e7eb;
+  --input-bg: #f9fafb;
+  --input-border: #e5e7eb;
   --input-focus-ring: rgba(37, 99, 235, 0.25);
 
-  --badge-bg:         #ef4444;   /* red-500  */
-  --badge-text:       #ffffff;
+  --badge-bg: #ef4444;
+  /* red-500  */
+  --badge-text: #ffffff;
 
   --profile-avatar-bg: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
 
-  --dropdown-shadow:  0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
 
-  --danger-text:      #dc2626;   /* red-600  */
-  --danger-hover-bg:  #fef2f2;   /* red-50   */
+  --danger-text: #dc2626;
+  /* red-600  */
+  --danger-hover-bg: #fef2f2;
+  /* red-50   */
 
-  --transition-fast: 140ms ease; /* already declared in Sidebar.css – safe to repeat */
+  --transition-fast: 140ms ease;
+  /* already declared in Sidebar.css – safe to repeat */
 }
 
 /* ─── Shell ──────────────────────────────────────────────────────────────── */
@@ -176,8 +180,15 @@
 }
 
 @keyframes tb-fade-in {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .tb-dropdown__item {
@@ -209,6 +220,7 @@
 .tb-dropdown__item--danger {
   color: var(--danger-text);
 }
+
 .tb-dropdown__item--danger:hover,
 .tb-dropdown__item--danger:focus-visible {
   background: var(--danger-hover-bg);
@@ -299,8 +311,15 @@
 }
 
 @keyframes tb-badge-pop {
-  from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* ─── Profile menu ───────────────────────────────────────────────────────── */
@@ -393,6 +412,7 @@
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
+
   .topbar__search-input,
   .tb-icon-btn,
   .tb-lang__chevron,
@@ -400,9 +420,11 @@
   .tb-profile__chevron {
     transition: none;
   }
+
   .tb-dropdown {
     animation: none;
   }
+
   .tb-notif-badge {
     animation: none;
   }
