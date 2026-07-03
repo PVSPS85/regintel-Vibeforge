@@ -196,6 +196,12 @@ class LocalOfflineAIService(AIServiceInterface):
         extracted_text = ""
         if file_path and os.path.exists(file_path):
             try:
+                file_size = os.path.getsize(file_path)
+                if file_size == 0:
+                    raise ValueError(
+                        f"PDF file at '{file_path}' is 0 bytes. "
+                        "The upload was likely corrupted before reaching the AI pipeline."
+                    )
                 if file_path.endswith(".txt"):
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         extracted_text = f.read()
@@ -208,14 +214,28 @@ class LocalOfflineAIService(AIServiceInterface):
                             pages.append(page.get_text("text"))
                         doc.close()
                         extracted_text = "\n".join(pages).strip()
-                        if len(extracted_text.split()) == 0:
-                            raise ValueError(f"Extracted 0 words from PDF '{file_path}'.")
+                        # FIX: use .strip() not .split() — whitespace-only strings
+                        # like "\n\n\n" have split()==[] which is correct, but an
+                        # image-only PDF producing "  " would pass the original check.
+                        if not extracted_text:
+                            raise ValueError(
+                                f"No extractable text found in PDF '{file_path}'. "
+                                "The document may be image-only (scanned), empty, or "
+                                "content-restricted. Please upload a text-based PDF."
+                            )
                     except Exception as exc:
                         logger.warning(f"[LocalOfflineAIService] fitz extraction error: {exc}")
                         raise ValueError(f"PDF extraction failed: {exc}")
             except Exception as e:
                 logger.warning(f"[LocalOfflineAIService] Could not read file '{file_path}': {e}")
                 raise
+
+        # Guard: refuse to call Ollama with no meaningful input
+        if not extracted_text.strip():
+            raise ValueError(
+                "PDF text extraction produced an empty result. "
+                "Cannot invoke Ollama without regulation text."
+            )
 
         # Call Ollama to generate structured task list
         try:

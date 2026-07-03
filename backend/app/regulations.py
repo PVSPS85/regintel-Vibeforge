@@ -1,11 +1,11 @@
 import os
-import shutil
 import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks, Form, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -23,6 +23,7 @@ class RegulationResponse(BaseModel):
     id: UUID
     title: str
     uploaded_by: UUID
+    file_path: Optional[str] = None
     status: str = "PROCESSING"
     extracted_text: Optional[str] = None
     summary: Optional[str] = None
@@ -116,14 +117,23 @@ def dispatch_ai_pipeline_and_save_tasks(regulation_id: UUID, file_path: str, bra
         extracted_text_content = ""
         try:
             import fitz
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Uploaded PDF not found on disk at '{file_path}'.")
+            if os.path.getsize(file_path) == 0:
+                raise ValueError(f"Uploaded PDF is a 0-byte file at '{file_path}'. The upload may have been corrupted.")
             doc = fitz.open(file_path)
             pages = []
             for page in doc:
                 pages.append(page.get_text("text"))
             doc.close()
             extracted_text_content = "\n".join(pages).strip()
-            if len(extracted_text_content.split()) == 0:
-                raise ValueError(f"Extracted 0 words from PDF '{file_path}'.")
+            # Use .strip() not .split() — whitespace-only content can fool the word count check
+            if not extracted_text_content:
+                raise ValueError(
+                    f"No extractable text found in PDF '{file_path}'. "
+                    "The document may be image-only (scanned), empty, or content-restricted. "
+                    "Please use a text-based PDF."
+                )
         except Exception as e:
             logger.warning(f"Could not extract text with fitz: {e}")
             raise ValueError(f"PDF extraction failed: {e}")
@@ -208,7 +218,7 @@ def get_regulations(
 
 @router.post("/", response_model=RegulationResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/upload", response_model=RegulationResponse, status_code=status.HTTP_201_CREATED)
-def upload_regulation(
+async def upload_regulation(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
@@ -218,33 +228,58 @@ def upload_regulation(
     """
     Secure PDF Upload Endpoint. Protected by Manager/Admin roles.
     Saves file reference and triggers AI Service layer for extraction & task generation.
+
+    FIX: Endpoint is async and uses `await file.read()` to guarantee the full
+    SpooledTemporaryFile buffer is consumed and flushed before writing to disk.
+    Using `shutil.copyfileobj(file.file, ...)` on a sync def can leave the
+    internal cursor in a partially-read state for large multipart uploads,
+    resulting in 0-byte or truncated files that fitz cannot extract text from.
     """
     if not file.filename or not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF circular files are supported.")
-        
+
     final_title = title if title else file.filename
-    
+
     upload_dir = "uploads/regulations"
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, file.filename)
-    
+
+    # ── FIX: Await the full read so the SpooledTemporaryFile buffer cursor is
+    # guaranteed to be at position 0 and all bytes are in memory before writing.
+    # shutil.copyfileobj on a sync endpoint does NOT guarantee this for multipart
+    # uploads that exceed the spool threshold (default: 1 MB).
+    file_bytes = await file.read()
+
+    if not file_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded file is empty (0 bytes). Please upload a valid PDF document."
+        )
+
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
+        buffer.write(file_bytes)
+
+    # Confirm the file landed on disk with content before queuing the background job
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        raise HTTPException(
+            status_code=500,
+            detail="File write failed — the saved PDF is empty or missing. Please try again."
+        )
+
     new_regulation = models.Regulation(
         title=final_title,
         file_path=file_path,
         uploaded_by=current_user.id,
         status="PROCESSING"
     )
-    
+
     db.add(new_regulation)
     db.commit()
     db.refresh(new_regulation)
-    
+
     branch_id_str = str(current_user.branch_id) if current_user.branch_id else ""
     background_tasks.add_task(dispatch_ai_pipeline_and_save_tasks, new_regulation.id, file_path, branch_id_str)
-    
+
     return new_regulation
 
 
@@ -337,6 +372,30 @@ def get_regulation(
     if not reg:
         raise HTTPException(status_code=404, detail="Regulation not found")
     return reg
+
+
+@router.get("/{id}/download")
+def download_regulation(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """Returns the PDF file binary for download."""
+    reg = db.query(models.Regulation).filter(models.Regulation.id == id).first()
+    if not reg or not reg.file_path:
+        raise HTTPException(status_code=404, detail="Regulation file reference not found")
+    if not os.path.exists(reg.file_path):
+        raise HTTPException(status_code=404, detail="Physical PDF file not found on disk")
+    
+    filename = os.path.basename(reg.file_path)
+    if not filename.endswith(".pdf"):
+        filename += ".pdf"
+        
+    return FileResponse(
+        path=reg.file_path,
+        filename=filename,
+        media_type="application/pdf"
+    )
 
 
 @router.get("/{id}/tasks")

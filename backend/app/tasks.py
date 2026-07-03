@@ -38,6 +38,7 @@ class TaskUpdate(BaseModel):
 class TaskResponse(TaskBase):
     id: UUID
     branch_id: UUID
+    regulation_id: Optional[UUID] = None   # exposes the regulation link for frontend grouping
     created_at: datetime
     updated_at: datetime
 

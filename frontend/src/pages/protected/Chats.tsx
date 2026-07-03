@@ -289,8 +289,10 @@ const Chats = () => {
     try {
       if (!isBackground) setLoadingMessages(true);
       const res = await api.get<ChatMessage[]>(`/chats/${chatId}/messages`);
-      // Sort chronologically ascending for standard chat display
-      const sorted = (res.data || []).slice().reverse();
+      // Sort chronologically ascending (oldest at top, newest at bottom)
+      const sorted = (res.data || []).slice().sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
       setMessages(sorted);
     } catch (err) {
       console.error("Failed loading thread messages:", err);
@@ -317,12 +319,12 @@ const Chats = () => {
     return () => clearInterval(interval);
   }, [activeChatId]);
 
-  // Scroll to bottom when messages update
+  // Auto-scroll to bottom when messages update
   useEffect(() => {
     if (activeView === 'Chats') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, activeView]);
+  }, [messages, activeView, activeChatId]);
 
   const handleSend = async () => {
     const trimmed = inputValue.trim();
@@ -366,6 +368,27 @@ const Chats = () => {
     getChatTitle(c, user?.id).toLowerCase().includes(chatSearch.toLowerCase())
   );
 
+  const filteredTeams = teams.filter((t) =>
+    t.name.toLowerCase().includes(chatSearch.toLowerCase())
+  );
+  const dmConvs = filteredConvs.filter((c) => !c.is_group);
+
+  const handleOpenTeamChannel = async (teamId: string) => {
+    const existing = chats.find((c) => c.is_group && c.team_id === teamId);
+    if (existing) {
+      setActiveChatId(existing.id);
+      return;
+    }
+    try {
+      const res = await api.post<ChatItem>('/chats/', { is_group: true, team_id: teamId });
+      setChats((prev) => (prev.some((c) => c.id === res.data.id) ? prev : [res.data, ...prev]));
+      setActiveChatId(res.data.id);
+    } catch (err: any) {
+      console.error('Failed opening channel:', err);
+      alert(err.response?.data?.detail || 'Could not open team channel.');
+    }
+  };
+
   const otherEmployees = users.filter((u) => u.id !== user?.id);
   const filteredDir = otherEmployees.filter((emp) =>
     emp.name.toLowerCase().includes(dirSearch.toLowerCase()) ||
@@ -374,7 +397,7 @@ const Chats = () => {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f9fafb] font-sans text-gray-900 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-64px)] -mb-16 w-full bg-[#f9fafb] font-sans text-gray-900 overflow-hidden">
 
       {/* ── TOP BAR / NAV ── */}
       <div className="h-16 border-b border-[rgba(0,0,0,0.05)] px-8 flex items-center justify-between flex-shrink-0 bg-white">
@@ -411,10 +434,10 @@ const Chats = () => {
       </div>
 
       {/* ── BODY SPLIT ── */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         
         {/* ── LEFT SIDEBAR (CHATS OR DIRECTORY FILTER) ── */}
-        <div className="w-80 bg-white border-r border-[rgba(0,0,0,0.05)] flex flex-col flex-shrink-0">
+        <div className="w-80 bg-white border-r border-[rgba(0,0,0,0.05)] flex flex-col shrink-0 h-full overflow-hidden">
           
           <div className="p-4 border-b border-[rgba(0,0,0,0.05)]">
             <div className="relative">
@@ -430,48 +453,79 @@ const Chats = () => {
           </div>
 
           {activeView === 'Chats' ? (
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-4">
               {loadingChats ? (
                 <div className="py-12 flex flex-col items-center justify-center text-gray-400 gap-2">
                   <Loader2 size={20} className="animate-spin text-blue-600" />
                   <span className="text-xs font-medium">Syncing threads...</span>
                 </div>
-              ) : filteredConvs.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <MessageSquare size={28} className="mx-auto text-gray-300 mb-2" />
-                  <p className="text-xs font-bold text-gray-600">No active conversations</p>
-                  <p className="text-[11px] text-gray-400 mt-1">Start messaging branch contacts from the directory or start a new chat.</p>
-                </div>
               ) : (
-                filteredConvs.map((conv, idx) => {
-                  const isActive = conv.id === activeChatId;
-                  const title = getChatTitle(conv, user?.id);
-                  const initials = getInitials(title);
-
-                  return (
-                    <button
-                      key={conv.id}
-                      onClick={() => setActiveChatId(conv.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all cursor-pointer ${
-                        isActive ? 'bg-blue-50/80 text-blue-950 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-800'
-                      }`}
-                    >
-                      <Avatar initials={initials} colorIndex={idx} size="md" online={true} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className={`text-[13px] font-bold truncate ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
-                            {conv.is_group && <Hash size={12} className="inline mr-0.5 text-blue-600" />}
-                            {title}
-                          </span>
-                          <span className="text-[10px] font-medium text-gray-400 shrink-0">{formatTime(conv.created_at)}</span>
-                        </div>
-                        <p className="text-[12px] text-gray-500 truncate mt-0.5">
-                          {conv.is_group ? 'Team internal communication channel' : 'End-to-end branch DM'}
-                        </p>
+                <>
+                  {/* ── TEAM CHANNELS ── */}
+                  <div>
+                    <p className="px-3 text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1.5">Team Channels</p>
+                    {filteredTeams.length === 0 ? (
+                      <p className="px-3 py-1.5 text-xs text-gray-400 italic">No channels found</p>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {filteredTeams.map((team) => {
+                          const teamChat = chats.find((c) => c.is_group && c.team_id === team.id);
+                          const isActive = teamChat && teamChat.id === activeChatId;
+                          const slug = team.name.toLowerCase().trim().replace(/\s+/g, '-');
+                          return (
+                            <button
+                              key={team.id}
+                              onClick={() => handleOpenTeamChannel(team.id)}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all cursor-pointer ${
+                                isActive ? 'bg-blue-50/90 text-blue-900 font-bold ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700 font-medium'
+                              }`}
+                            >
+                              <Hash size={14} className={isActive ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'} />
+                              <span className="text-[13px] truncate">{slug}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
-                  );
-                })
+                    )}
+                  </div>
+
+                  {/* ── DIRECT MESSAGES ── */}
+                  <div>
+                    <p className="px-3 text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1.5">Direct Messages</p>
+                    {dmConvs.length === 0 ? (
+                      <p className="px-3 py-1.5 text-xs text-gray-400 italic">No direct messages</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {dmConvs.map((conv, idx) => {
+                          const isActive = conv.id === activeChatId;
+                          const title = getChatTitle(conv, user?.id);
+                          const initials = getInitials(title);
+
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => setActiveChatId(conv.id)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                                isActive ? 'bg-blue-50/80 text-blue-950 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-800'
+                              }`}
+                            >
+                              <Avatar initials={initials} colorIndex={idx} size="md" online={true} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className={`text-[13px] font-bold truncate ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+                                    {title}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-gray-400 shrink-0">{formatTime(conv.created_at)}</span>
+                                </div>
+                                <p className="text-[12px] text-gray-500 truncate mt-0.5">End-to-end branch DM</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -495,7 +549,7 @@ const Chats = () => {
         </div>
 
         {/* ── RIGHT MAIN PANEL ── */}
-        <div className="flex-1 flex flex-col h-full bg-gray-50/40">
+        <div className="flex-1 flex flex-col h-full bg-gray-50/40 overflow-hidden min-w-0">
           
           {activeView === 'Directory' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -553,7 +607,7 @@ const Chats = () => {
               </button>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col h-full bg-white overflow-hidden">
+            <div className="flex-1 flex flex-col h-full bg-white overflow-hidden min-h-0">
               
               {/* Chat Thread Header */}
               <div className="h-16 border-b border-[rgba(0,0,0,0.05)] px-6 flex items-center justify-between flex-shrink-0 bg-white">
@@ -580,7 +634,7 @@ const Chats = () => {
               </div>
 
               {/* Message History View */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#f9fafb]/60">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#f9fafb]/60 flex flex-col min-h-0">
                 {loadingMessages && messages.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-gray-400 gap-2">
                     <Loader2 size={20} className="animate-spin text-blue-600" />
